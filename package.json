@@ -1,6 +1,6 @@
 {
   "name": "ali-nfc2qr",
-  "version": "0.1.0",
+  "version": "1.2.0",
   "private": true,
   "description": "支付宝 NFC 链接解码器 - 将 NFC 链接转换为二维码",
   "repository": {

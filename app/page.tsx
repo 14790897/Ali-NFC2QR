@@ -20,6 +20,7 @@ import {
 import QRCode from "qrcode";
 import NFCReaderComponent from "@/components/nfc-reader";
 import StructuredData from "@/components/structured-data";
+import { APP_VERSION } from "@/lib/version";
 
 interface DecodeResult {
   originalLink: string;
@@ -555,6 +556,11 @@ export default function AlipayNFCDecoder() {
                     >
                       故障排除指南 <ExternalLink className="w-3 h-3" />
                     </a>
+                    <div className="mt-3 pt-2 border-t border-gray-200">
+                      <span className="text-xs text-gray-500 font-mono">
+                        版本 v{APP_VERSION}
+                      </span>
+                    </div>
                   </div>
                 </div>
                 <div>
@@ -580,6 +586,27 @@ export default function AlipayNFCDecoder() {
               </div>
             </CardContent>
           </Card>
+
+          {/* 页面底部版本信息 */}
+          <div className="text-center py-6 border-t border-gray-200 mt-8">
+            <div className="text-sm text-gray-500 space-y-1">
+              <div className="font-mono">Ali-NFC2QR v{APP_VERSION}</div>
+              <div className="text-xs text-gray-400">
+                开源的支付宝 NFC 链接解码器 | 支持 NFC 读取、写入和二维码生成
+              </div>
+              <div className="text-xs text-gray-400">
+                © 2024 Ali-NFC2QR | MIT License |
+                <a
+                  href="https://github.com/14790897/Ali-NFC2QR"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="ml-1 text-blue-500 hover:text-blue-700"
+                >
+                  GitHub
+                </a>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </>

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { APP_VERSION, APP_NAME, LAST_UPDATED } from "@/lib/version"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -705,6 +706,17 @@ export default function NFCReaderComponent({ onNFCRead }: NFCReaderProps) {
             </li>
             <li>• 等待震动反馈，表示操作成功</li>
           </ul>
+        </div>
+
+        {/* 版本信息 */}
+        <div className="mt-4 pt-4 border-t border-gray-200">
+          <div className="flex items-center justify-between text-xs text-gray-500">
+            <span>{APP_NAME}</span>
+            <span>v{APP_VERSION}</span>
+          </div>
+          <div className="text-xs text-gray-400 mt-1">
+            最后更新：{LAST_UPDATED} | 支持 NFC 读取、写入和二维码生成
+          </div>
         </div>
 
         {hasPermission === false && (
