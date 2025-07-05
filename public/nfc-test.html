@@ -94,6 +94,7 @@
         let ndefReader = null;
         let isScanning = false;
         let lastReadRecords = [];
+        let abortController = null;
 
         // 检查浏览器支持
         function checkSupport() {
@@ -115,8 +116,11 @@
             try {
                 const statusDiv = document.getElementById('scan-status');
                 statusDiv.innerHTML = '<div class="status info">🔄 正在启动 NFC 扫描...</div>';
-                
-                await ndefReader.scan();
+
+                // 创建新的 AbortController
+                abortController = new AbortController();
+
+                await ndefReader.scan({ signal: abortController.signal });
                 
                 isScanning = true;
                 document.getElementById('scan-btn').disabled = true;
@@ -185,13 +189,30 @@
 
             } catch (error) {
                 console.error('启动 NFC 扫描失败:', error);
-                document.getElementById('scan-status').innerHTML = 
+
+                // 如果是用户主动中止，不显示错误
+                if (error.name === 'AbortError') {
+                    console.log('NFC扫描被用户中止');
+                    return;
+                }
+
+                document.getElementById('scan-status').innerHTML =
                     `<div class="status error">❌ 启动扫描失败: ${error.message}</div>`;
             }
         }
 
         // 停止扫描
         function stopScan() {
+            console.log('停止NFC扫描');
+
+            // 使用 AbortController 停止扫描
+            if (abortController) {
+                abortController.abort();
+                abortController = null;
+                console.log('已发送停止信号');
+            }
+
+            // 清理事件监听器
             if (ndefReader) {
                 ndefReader.onreading = null;
                 ndefReader.onreadingerror = null;
@@ -202,6 +223,7 @@
             document.getElementById('stop-btn').disabled = true;
             document.getElementById('scan-status').innerHTML =
                 '<div class="status info">⏹️ NFC 扫描已停止</div>';
+            console.log('NFC扫描已停止');
         }
 
         // 写入测试数据
@@ -245,14 +267,34 @@
                 statusDiv.innerHTML = '<div class="status info">🔄 正在写入读取的数据...</div>';
 
                 const message = {
-                    records: lastReadRecords.map(record => ({
-                        recordType: record.recordType,
-                        mediaType: record.mediaType,
-                        id: record.id,
-                        data: record.data,
-                        encoding: record.encoding,
-                        lang: record.lang
-                    }))
+                    records: lastReadRecords.map(record => {
+                        const baseRecord = {
+                            recordType: record.recordType,
+                            data: record.data
+                        };
+
+                        // 只为特定记录类型添加相应的属性
+                        if (record.id) {
+                            baseRecord.id = record.id;
+                        }
+
+                        // 只为 mime 类型记录添加 mediaType
+                        if (record.recordType === 'mime' && record.mediaType) {
+                            baseRecord.mediaType = record.mediaType;
+                        }
+
+                        // 只为 text 类型记录添加 encoding 和 lang
+                        if (record.recordType === 'text') {
+                            if (record.encoding) {
+                                baseRecord.encoding = record.encoding;
+                            }
+                            if (record.lang) {
+                                baseRecord.lang = record.lang;
+                            }
+                        }
+
+                        return baseRecord;
+                    })
                 };
 
                 console.log('准备写入的数据:', message);

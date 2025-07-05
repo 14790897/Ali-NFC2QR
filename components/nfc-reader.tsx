@@ -62,7 +62,8 @@ export default function NFCReaderComponent({ onNFCRead }: NFCReaderProps) {
   const [lastReadRecords, setLastReadRecords] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [writeSuccess, setWriteSuccess] = useState<string | null>(null);
-  const [ndefReader, setNdefReader] = useState<NFCReader | null>(null);
+  const [ndefReader, setNdefReader] = useState<NFCReader | null>(null)
+  const [abortController, setAbortController] = useState<AbortController | null>(null);
 
   useEffect(() => {
     // 检查浏览器支持
@@ -81,6 +82,13 @@ export default function NFCReaderComponent({ onNFCRead }: NFCReaderProps) {
 
     // 检查权限状态
     checkPermission();
+
+    // 清理函数：组件卸载时停止扫描
+    return () => {
+      if (abortController) {
+        abortController.abort();
+      }
+    };
   }, []);
 
   const checkPermission = async () => {
@@ -98,6 +106,56 @@ export default function NFCReaderComponent({ onNFCRead }: NFCReaderProps) {
     } catch (error) {
       console.log("无法检查NFC权限状态:", error);
     }
+  };
+
+  // 验证和清理 NDEF 记录
+  const validateAndCleanRecord = (record: any) => {
+    const cleanRecord: any = {
+      recordType: record.recordType,
+      data: record.data,
+    };
+
+    // 验证必需字段
+    if (!record.recordType) {
+      throw new Error("记录缺少 recordType 字段");
+    }
+
+    if (!record.data) {
+      throw new Error("记录缺少 data 字段");
+    }
+
+    // 根据记录类型添加相应属性
+    switch (record.recordType) {
+      case "text":
+        if (record.encoding) {
+          cleanRecord.encoding = record.encoding;
+        }
+        if (record.lang) {
+          cleanRecord.lang = record.lang;
+        }
+        break;
+
+      case "mime":
+        if (record.mediaType) {
+          cleanRecord.mediaType = record.mediaType;
+        }
+        break;
+
+      case "url":
+      case "absolute-url":
+        // URL 记录不需要额外属性
+        break;
+
+      default:
+        console.log(`处理未知记录类型: ${record.recordType}`);
+    }
+
+    // 添加 ID（如果存在）
+    if (record.id) {
+      cleanRecord.id = record.id;
+    }
+
+    return cleanRecord;
   };
 
   const checkNFCSettings = () => {
@@ -127,7 +185,11 @@ export default function NFCReaderComponent({ onNFCRead }: NFCReaderProps) {
       setError(null);
       setIsScanning(true);
 
-      await ndefReader.scan();
+      // 创建新的 AbortController
+      const controller = new AbortController();
+      setAbortController(controller);
+
+      await ndefReader.scan({ signal: controller.signal });
       console.log("NFC扫描已开始");
 
       ndefReader.onreading = (event: NFCReadingEvent) => {
@@ -216,17 +278,39 @@ export default function NFCReaderComponent({ onNFCRead }: NFCReaderProps) {
       setHasPermission(true);
     } catch (error: any) {
       console.error("启动NFC扫描失败:", error);
+
+      // 如果是用户主动中止，不显示错误
+      if (error.name === 'AbortError') {
+        console.log("NFC扫描被用户中止");
+        setIsScanning(false);
+        return;
+      }
+
       setError(`启动扫描失败: ${error.message}`);
       setIsScanning(false);
+      setAbortController(null);
     }
   };
 
   const stopScanning = () => {
-    setIsScanning(false);
+    console.log("停止NFC扫描");
+
+    // 使用 AbortController 停止扫描
+    if (abortController) {
+      abortController.abort();
+      setAbortController(null);
+      console.log("已发送停止信号");
+    }
+
+    // 清理事件监听器
     if (ndefReader) {
       ndefReader.onreading = null;
       ndefReader.onreadingerror = null;
     }
+
+    setIsScanning(false);
+    setError(null);
+    console.log("NFC扫描已停止");
   };
 
   const writeToNFC = async () => {
@@ -237,26 +321,44 @@ export default function NFCReaderComponent({ onNFCRead }: NFCReaderProps) {
       setWriteSuccess(null);
       setIsWriting(true);
 
-      // 构建NDEF消息
+      // 构建NDEF消息，使用验证函数清理记录
       const message = {
-        records: lastReadRecords.map((record) => ({
-          recordType: record.recordType,
-          mediaType: record.mediaType,
-          id: record.id,
-          data: record.data,
-          encoding: record.encoding,
-          lang: record.lang,
-        })),
+        records: lastReadRecords.map((record) =>
+          validateAndCleanRecord(record)
+        ),
       };
 
       console.log("准备写入的NDEF消息:", message);
+      console.log("原始记录数据:", lastReadRecords);
 
       await ndefReader.write(message);
       setWriteSuccess("数据已成功写入到NFC标签！");
       console.log("NFC写入成功");
     } catch (error: any) {
       console.error("NFC写入失败:", error);
-      setError(`写入失败: ${error.message}`);
+      console.error("错误详情:", {
+        name: error.name,
+        message: error.message,
+        stack: error.stack,
+      });
+
+      let errorMessage = `写入失败: ${error.message}`;
+
+      // 提供更友好的错误提示
+      if (error.message.includes("mediaType")) {
+        errorMessage =
+          "写入失败: 记录格式错误，mediaType 属性只能用于 MIME 类型记录";
+      } else if (error.message.includes("NotAllowedError")) {
+        errorMessage = "写入失败: 权限被拒绝，请确保已授权 NFC 权限";
+      } else if (error.message.includes("NotSupportedError")) {
+        errorMessage = "写入失败: 设备不支持 NFC 写入功能";
+      } else if (error.message.includes("InvalidStateError")) {
+        errorMessage = "写入失败: NFC 状态无效，请重新尝试";
+      } else if (error.message.includes("NetworkError")) {
+        errorMessage = "写入失败: NFC 通信错误，请检查标签是否可写入";
+      }
+
+      setError(errorMessage);
     } finally {
       setIsWriting(false);
     }

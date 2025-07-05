@@ -14,7 +14,7 @@ import {
   Link,
   AlertCircle,
   CheckCircle,
-  Github,
+  GitBranch,
   ExternalLink,
 } from "lucide-react";
 import QRCode from "qrcode";
@@ -334,7 +334,7 @@ export default function AlipayNFCDecoder() {
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
               >
-                <Github className="w-5 h-5" />
+                <GitBranch className="w-5 h-5" />
                 <span className="hidden sm:inline">GitHub</span>
                 <ExternalLink className="w-4 h-4" />
               </a>
@@ -526,7 +526,7 @@ export default function AlipayNFCDecoder() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Github className="w-5 h-5" />
+                <GitBranch className="w-5 h-5" />
                 项目信息
               </CardTitle>
             </CardHeader>
@@ -537,14 +537,25 @@ export default function AlipayNFCDecoder() {
                   <p className="text-gray-600 mb-2">
                     Ali-NFC2QR 是一个开源项目，欢迎贡献代码和提出建议。
                   </p>
-                  <a
-                    href="https://github.com/14790897/Ali-NFC2QR"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800"
-                  >
-                    查看源码 <ExternalLink className="w-3 h-3" />
-                  </a>
+                  <div className="space-y-2">
+                    <a
+                      href="https://github.com/14790897/Ali-NFC2QR"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800"
+                    >
+                      查看源码 <ExternalLink className="w-3 h-3" />
+                    </a>
+                    <br />
+                    <a
+                      href="https://github.com/14790897/Ali-NFC2QR/blob/main/docs/NFC-TROUBLESHOOTING.md"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-orange-600 hover:text-orange-800 text-sm"
+                    >
+                      故障排除指南 <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
                 </div>
                 <div>
                   <h4 className="font-semibold text-gray-900 mb-2">技术栈</h4>
