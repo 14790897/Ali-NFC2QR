@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NFC 调试工具</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .card {
+            border: 1px solid #e1e5e9;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .success { color: #10b981; }
+        .error { color: #ef4444; }
+        .warning { color: #f59e0b; }
+        .info { color: #3b82f6; }
+        button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #2563eb;
+        }
+        button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+        .result {
+            background: #f3f4f6;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 10px 0;
+            white-space: pre-wrap;
+            font-family: monospace;
+        }
+        .check-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 NFC 调试工具</h1>
+    
+    <div class="card">
+        <h2>环境检查</h2>
+        <div id="environment-check">
+            <button onclick="checkEnvironment()">开始检查</button>
+        </div>
+        <div id="check-results"></div>
+    </div>
+
+    <div class="card">
+        <h2>NFC 功能测试</h2>
+        <div>
+            <button id="scan-btn" onclick="startNFCTest()" disabled>开始 NFC 扫描测试</button>
+            <button id="stop-btn" onclick="stopNFCTest()" disabled>停止扫描</button>
+        </div>
+        <div id="nfc-results" class="result"></div>
+    </div>
+
+    <div class="card">
+        <h2>故障排除建议</h2>
+        <div id="troubleshooting"></div>
+    </div>
+
+    <script>
+        let ndefReader = null;
+        let isScanning = false;
+
+        function checkEnvironment() {
+            const results = document.getElementById('check-results');
+            const checks = [];
+
+            // 检查操作系统
+            const isAndroid = /Android/.test(navigator.userAgent);
+            checks.push({
+                name: 'Android 操作系统',
+                status: isAndroid,
+                detail: isAndroid ? '✓ 检测到 Android' : '✗ 当前不是 Android 设备'
+            });
+
+            // 检查浏览器
+            const isChrome = /Chrome/.test(navigator.userAgent);
+            checks.push({
+                name: 'Chrome 浏览器',
+                status: isChrome,
+                detail: isChrome ? '✓ 检测到 Chrome' : '✗ 当前不是 Chrome 浏览器'
+            });
+
+            // 检查 Chrome 版本
+            const chromeMatch = navigator.userAgent.match(/Chrome\/(\d+)/);
+            const chromeVersion = chromeMatch ? parseInt(chromeMatch[1]) : 0;
+            const chromeOK = chromeVersion >= 89;
+            checks.push({
+                name: 'Chrome 版本',
+                status: chromeOK,
+                detail: isChrome ? 
+                    (chromeOK ? `✓ Chrome ${chromeVersion} (>= 89)` : `✗ Chrome ${chromeVersion} (需要 >= 89)`) :
+                    '- 未检测到 Chrome'
+            });
+
+            // 检查 HTTPS
+            const isHTTPS = location.protocol === 'https:' || location.hostname === 'localhost';
+            checks.push({
+                name: 'HTTPS 协议',
+                status: isHTTPS,
+                detail: isHTTPS ? 
+                    `✓ ${location.protocol}//${location.hostname}` : 
+                    `✗ ${location.protocol}//${location.hostname} (需要 HTTPS)`
+            });
+
+            // 检查 Web NFC API
+            const hasNFC = 'NDEFReader' in window;
+            checks.push({
+                name: 'Web NFC API',
+                status: hasNFC,
+                detail: hasNFC ? '✓ NDEFReader 可用' : '✗ NDEFReader 不可用'
+            });
+
+            // 检查权限 API
+            const hasPermissions = 'permissions' in navigator;
+            checks.push({
+                name: '权限 API',
+                status: hasPermissions,
+                detail: hasPermissions ? '✓ 权限 API 可用' : '✗ 权限 API 不可用'
+            });
+
+            // 生成检查结果
+            let html = '';
+            checks.forEach(check => {
+                const statusClass = check.status ? 'success' : 'error';
+                html += `
+                    <div class="check-item">
+                        <span>${check.name}</span>
+                        <span class="${statusClass}">${check.detail}</span>
+                    </div>
+                `;
+            });
+
+            results.innerHTML = html;
+
+            // 更新按钮状态
+            const canTest = isAndroid && isChrome && chromeOK && isHTTPS && hasNFC;
+            document.getElementById('scan-btn').disabled = !canTest;
+
+            // 生成故障排除建议
+            generateTroubleshooting(checks);
+
+            // 详细日志
+            console.group('NFC 环境详细检查');
+            console.log('User Agent:', navigator.userAgent);
+            console.log('Platform:', navigator.platform);
+            console.log('Location:', location.href);
+            console.log('Permissions API:', hasPermissions);
+            console.log('NDEFReader:', hasNFC);
+            console.groupEnd();
+        }
+
+        function generateTroubleshooting(checks) {
+            const troubleshooting = document.getElementById('troubleshooting');
+            let suggestions = [];
+
+            if (!checks[0].status) { // 不是 Android
+                suggestions.push({
+                    problem: '当前设备不是 Android',
+                    solution: 'Web NFC API 目前仅在 Android 设备上支持。请使用 Android 手机或平板。'
+                });
+            }
+
+            if (!checks[1].status) { // 不是 Chrome
+                suggestions.push({
+                    problem: '当前浏览器不是 Chrome',
+                    solution: '请下载并使用 Google Chrome 浏览器。'
+                });
+            }
+
+            if (checks[1].status && !checks[2].status) { // Chrome 版本过低
+                suggestions.push({
+                    problem: 'Chrome 版本过低',
+                    solution: '请将 Chrome 更新到最新版本（至少 89 版本）。'
+                });
+            }
+
+            if (!checks[3].status) { // 不是 HTTPS
+                suggestions.push({
+                    problem: '网站不是通过 HTTPS 访问',
+                    solution: 'Web NFC 需要安全上下文。请确保网站通过 HTTPS 访问。'
+                });
+            }
+
+            if (checks[0].status && checks[1].status && checks[2].status && checks[3].status && !checks[4].status) {
+                suggestions.push({
+                    problem: 'Web NFC API 不可用',
+                    solution: `
+                        可能的解决方案：<br>
+                        1. 在 Chrome 地址栏输入 chrome://flags<br>
+                        2. 搜索 "Experimental Web Platform features"<br>
+                        3. 启用该功能并重启浏览器<br>
+                        4. 确保设备 NFC 功能已开启<br>
+                        5. 检查设备是否支持 NFC 硬件
+                    `
+                });
+            }
+
+            if (suggestions.length === 0) {
+                troubleshooting.innerHTML = '<div class="success">✓ 环境检查通过，可以测试 NFC 功能</div>';
+            } else {
+                let html = '';
+                suggestions.forEach((s, i) => {
+                    html += `
+                        <div style="margin-bottom: 15px; padding: 10px; background: #fef3c7; border-radius: 6px;">
+                            <strong class="warning">问题 ${i + 1}: ${s.problem}</strong><br>
+                            <div style="margin-top: 5px;">${s.solution}</div>
+                        </div>
+                    `;
+                });
+                troubleshooting.innerHTML = html;
+            }
+        }
+
+        async function startNFCTest() {
+            const results = document.getElementById('nfc-results');
+            results.textContent = '正在初始化 NFC 扫描...\n';
+
+            try {
+                ndefReader = new NDEFReader();
+                await ndefReader.scan();
+                
+                isScanning = true;
+                document.getElementById('scan-btn').disabled = true;
+                document.getElementById('stop-btn').disabled = false;
+                
+                results.textContent += '✓ NFC 扫描已启动\n';
+                results.textContent += '请将设备靠近 NFC 标签...\n\n';
+
+                ndefReader.onreading = event => {
+                    results.textContent += `--- NFC 标签检测到 ---\n`;
+                    results.textContent += `序列号: ${event.serialNumber}\n`;
+                    results.textContent += `记录数量: ${event.message.records.length}\n\n`;
+                    
+                    event.message.records.forEach((record, index) => {
+                        results.textContent += `记录 ${index + 1}:\n`;
+                        results.textContent += `  类型: ${record.recordType}\n`;
+                        results.textContent += `  媒体类型: ${record.mediaType || 'N/A'}\n`;
+                        results.textContent += `  编码: ${record.encoding || 'N/A'}\n`;
+                        results.textContent += `  语言: ${record.lang || 'N/A'}\n`;
+                        
+                        try {
+                            const decoder = new TextDecoder(record.encoding || 'utf-8');
+                            const bytes = new Uint8Array(record.data.buffer, record.data.byteOffset, record.data.byteLength);
+                            const text = decoder.decode(bytes);
+                            results.textContent += `  内容: ${text}\n`;
+                        } catch (e) {
+                            results.textContent += `  内容: [二进制数据，长度 ${record.data.byteLength} 字节]\n`;
+                        }
+                        results.textContent += '\n';
+                    });
+                    
+                    results.scrollTop = results.scrollHeight;
+                };
+
+                ndefReader.onreadingerror = event => {
+                    results.textContent += `✗ 读取错误: ${event}\n`;
+                    results.scrollTop = results.scrollHeight;
+                };
+
+            } catch (error) {
+                results.textContent += `✗ 启动失败: ${error.message}\n`;
+                results.textContent += `错误详情: ${error}\n`;
+            }
+        }
+
+        function stopNFCTest() {
+            if (ndefReader) {
+                ndefReader.onreading = null;
+                ndefReader.onreadingerror = null;
+            }
+            
+            isScanning = false;
+            document.getElementById('scan-btn').disabled = false;
+            document.getElementById('stop-btn').disabled = true;
+            
+            const results = document.getElementById('nfc-results');
+            results.textContent += '\n--- 扫描已停止 ---\n';
+            results.scrollTop = results.scrollHeight;
+        }
+
+        // 页面加载时自动检查环境
+        window.onload = checkEnvironment;
+    </script>
+</body>
+</html>

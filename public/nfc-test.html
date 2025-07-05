@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NFC 测试页面</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        button {
+            background-color: #00A0EA;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background-color: #0088CC;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .info { background-color: #d1ecf1; color: #0c5460; }
+        .data {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 10px;
+            margin: 10px 0;
+            word-break: break-all;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 NFC 功能测试</h1>
+    
+    <div class="card">
+        <h2>浏览器支持检测</h2>
+        <div id="support-status"></div>
+    </div>
+
+    <div class="card">
+        <h2>NFC 扫描</h2>
+        <button id="scan-btn">开始扫描 NFC</button>
+        <button id="stop-btn" disabled>停止扫描</button>
+        <div id="scan-status"></div>
+        <div id="nfc-data"></div>
+    </div>
+
+    <div class="card">
+        <h2>使用说明</h2>
+        <ul>
+            <li>此页面用于测试 Web NFC API 功能</li>
+            <li>需要在 Android 设备上的 Chrome 89+ 浏览器中使用</li>
+            <li>确保设备已开启 NFC 功能</li>
+            <li>点击"开始扫描 NFC"后，将手机靠近 NFC 标签</li>
+        </ul>
+    </div>
+
+    <script>
+        let ndefReader = null;
+        let isScanning = false;
+
+        // 检查浏览器支持
+        function checkSupport() {
+            const supportDiv = document.getElementById('support-status');
+            
+            if ('NDEFReader' in window) {
+                supportDiv.innerHTML = '<div class="status success">✅ 浏览器支持 Web NFC API</div>';
+                ndefReader = new NDEFReader();
+            } else {
+                supportDiv.innerHTML = '<div class="status error">❌ 浏览器不支持 Web NFC API<br>请使用 Android 设备上的 Chrome 89+ 浏览器</div>';
+                document.getElementById('scan-btn').disabled = true;
+            }
+        }
+
+        // 开始扫描
+        async function startScan() {
+            if (!ndefReader) return;
+
+            try {
+                const statusDiv = document.getElementById('scan-status');
+                statusDiv.innerHTML = '<div class="status info">🔄 正在启动 NFC 扫描...</div>';
+                
+                await ndefReader.scan();
+                
+                isScanning = true;
+                document.getElementById('scan-btn').disabled = true;
+                document.getElementById('stop-btn').disabled = false;
+                
+                statusDiv.innerHTML = '<div class="status success">📡 NFC 扫描已启动，请将手机靠近 NFC 标签</div>';
+
+                ndefReader.onreading = (event) => {
+                    console.log('NFC 读取事件:', event);
+                    
+                    const dataDiv = document.getElementById('nfc-data');
+                    let html = '<h3>📱 NFC 数据读取成功</h3>';
+                    html += `<p><strong>序列号:</strong> ${event.serialNumber || '无'}</p>`;
+                    html += '<h4>记录数据:</h4>';
+                    
+                    event.message.records.forEach((record, index) => {
+                        html += `<div class="data">`;
+                        html += `<strong>记录 ${index + 1}:</strong><br>`;
+                        html += `类型: ${record.recordType}<br>`;
+                        if (record.mediaType) html += `媒体类型: ${record.mediaType}<br>`;
+                        if (record.id) html += `ID: ${record.id}<br>`;
+                        
+                        // 尝试解码数据
+                        try {
+                            let decodedData = '';
+                            switch (record.recordType) {
+                                case 'text':
+                                    const textDecoder = new TextDecoder(record.encoding || 'utf-8');
+                                    decodedData = textDecoder.decode(record.data.buffer);
+                                    break;
+                                case 'url':
+                                    const urlDecoder = new TextDecoder();
+                                    decodedData = urlDecoder.decode(record.data.buffer);
+                                    break;
+                                default:
+                                    const defaultDecoder = new TextDecoder();
+                                    decodedData = defaultDecoder.decode(record.data.buffer);
+                            }
+                            html += `数据: ${decodedData}`;
+                        } catch (e) {
+                            html += `数据: [无法解码的二进制数据]`;
+                        }
+                        html += `</div>`;
+                    });
+                    
+                    dataDiv.innerHTML = html;
+                };
+
+                ndefReader.onreadingerror = (event) => {
+                    console.error('NFC 读取错误:', event);
+                    statusDiv.innerHTML = '<div class="status error">❌ NFC 读取错误，请尝试其他标签</div>';
+                };
+
+            } catch (error) {
+                console.error('启动 NFC 扫描失败:', error);
+                document.getElementById('scan-status').innerHTML = 
+                    `<div class="status error">❌ 启动扫描失败: ${error.message}</div>`;
+            }
+        }
+
+        // 停止扫描
+        function stopScan() {
+            if (ndefReader) {
+                ndefReader.onreading = null;
+                ndefReader.onreadingerror = null;
+            }
+            
+            isScanning = false;
+            document.getElementById('scan-btn').disabled = false;
+            document.getElementById('stop-btn').disabled = true;
+            document.getElementById('scan-status').innerHTML = 
+                '<div class="status info">⏹️ NFC 扫描已停止</div>';
+        }
+
+        // 事件监听
+        document.getElementById('scan-btn').addEventListener('click', startScan);
+        document.getElementById('stop-btn').addEventListener('click', stopScan);
+
+        // 页面加载时检查支持
+        checkSupport();
+    </script>
+</body>
+</html>

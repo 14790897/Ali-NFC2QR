@@ -55,7 +55,13 @@ export default function NFCReaderComponent({ onNFCRead }: NFCReaderProps) {
       setIsSupported(true)
       setNdefReader(new window.NDEFReader())
     } else {
-      setIsSupported(false)
+      setIsSupported(false);
+      // 详细检查不支持的原因
+      console.log("Web NFC 不支持检查:");
+      console.log("User Agent:", navigator.userAgent);
+      console.log("Platform:", navigator.platform);
+      console.log("Is Chrome:", /Chrome/.test(navigator.userAgent));
+      console.log("Is Android:", /Android/.test(navigator.userAgent));
     }
 
     // 检查权限状态
@@ -77,6 +83,26 @@ export default function NFCReaderComponent({ onNFCRead }: NFCReaderProps) {
     }
   }
 
+  const checkNFCSettings = () => {
+    const checks = {
+      isAndroid: /Android/.test(navigator.userAgent),
+      isChrome: /Chrome/.test(navigator.userAgent),
+      isHTTPS:
+        location.protocol === "https:" || location.hostname === "localhost",
+      hasNDEF: "NDEFReader" in window,
+    };
+
+    console.group("NFC 环境检查");
+    console.log("Android 设备:", checks.isAndroid);
+    console.log("Chrome 浏览器:", checks.isChrome);
+    console.log("HTTPS 协议:", checks.isHTTPS);
+    console.log("NDEFReader 可用:", checks.hasNDEF);
+    console.log("User Agent:", navigator.userAgent);
+    console.groupEnd();
+
+    return checks;
+  };
+
   const startScanning = async () => {
     if (!ndefReader) return
 
@@ -95,27 +121,48 @@ export default function NFCReaderComponent({ onNFCRead }: NFCReaderProps) {
           let data = ''
           
           switch (record.recordType) {
-            case 'text':
-              const textDecoder = new TextDecoder(record.encoding || 'utf-8')
-              data = textDecoder.decode(record.data.buffer)
-              break
-            case 'url':
-              const urlDecoder = new TextDecoder()
-              data = urlDecoder.decode(record.data.buffer)
-              break
-            case 'mime':
-              if (record.mediaType === 'text/plain') {
-                const mimeDecoder = new TextDecoder()
-                data = mimeDecoder.decode(record.data.buffer)
+            case "text":
+              const textDecoder = new TextDecoder(record.encoding || "utf-8");
+              // 修复 TypeScript 错误：正确处理 DataView
+              const textBytes = new Uint8Array(
+                record.data.buffer,
+                record.data.byteOffset,
+                record.data.byteLength
+              );
+              data = textDecoder.decode(textBytes);
+              break;
+            case "url":
+              const urlDecoder = new TextDecoder();
+              const urlBytes = new Uint8Array(
+                record.data.buffer,
+                record.data.byteOffset,
+                record.data.byteLength
+              );
+              data = urlDecoder.decode(urlBytes);
+              break;
+            case "mime":
+              if (record.mediaType === "text/plain") {
+                const mimeDecoder = new TextDecoder();
+                const mimeBytes = new Uint8Array(
+                  record.data.buffer,
+                  record.data.byteOffset,
+                  record.data.byteLength
+                );
+                data = mimeDecoder.decode(mimeBytes);
               }
-              break
+              break;
             default:
               // 尝试作为文本解码
-              const defaultDecoder = new TextDecoder()
+              const defaultDecoder = new TextDecoder();
               try {
-                data = defaultDecoder.decode(record.data.buffer)
+                const defaultBytes = new Uint8Array(
+                  record.data.buffer,
+                  record.data.byteOffset,
+                  record.data.byteLength
+                );
+                data = defaultDecoder.decode(defaultBytes);
               } catch (e) {
-                data = `未知格式数据 (${record.recordType})`
+                data = `未知格式数据 (${record.recordType})`;
               }
           }
 
@@ -151,6 +198,11 @@ export default function NFCReaderComponent({ onNFCRead }: NFCReaderProps) {
   }
 
   if (!isSupported) {
+    const isAndroid = /Android/.test(navigator.userAgent);
+    const isChrome = /Chrome/.test(navigator.userAgent);
+    const chromeVersion = navigator.userAgent.match(/Chrome\/(\d+)/);
+    const chromeVersionNumber = chromeVersion ? parseInt(chromeVersion[1]) : 0;
+    
     return (
       <Card>
         <CardHeader>
@@ -163,17 +215,153 @@ export default function NFCReaderComponent({ onNFCRead }: NFCReaderProps) {
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              您的浏览器不支持 Web NFC API。请使用 Chrome for Android 89+ 版本。
+              您的浏览器不支持 Web NFC API。请检查以下要求：
             </AlertDescription>
           </Alert>
-          <div className="mt-4 space-y-2 text-sm text-gray-600">
-            <p>• Web NFC 目前仅在 Android 设备上的 Chrome 浏览器中支持</p>
-            <p>• 需要 Chrome 89 或更高版本</p>
-            <p>• 设备必须支持 NFC 功能</p>
+
+          <div className="mt-4 space-y-3">
+            <div className="bg-gray-50 p-3 rounded-lg">
+              <h4 className="font-medium text-sm mb-2">当前环境检测：</h4>
+              <div className="space-y-1 text-xs">
+                <div className="flex justify-between">
+                  <span>操作系统：</span>
+                  <span
+                    className={isAndroid ? "text-green-600" : "text-red-600"}
+                  >
+                    {isAndroid ? "✓ Android" : "✗ 非 Android"}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span>浏览器：</span>
+                  <span
+                    className={isChrome ? "text-green-600" : "text-red-600"}
+                  >
+                    {isChrome ? "✓ Chrome" : "✗ 非 Chrome"}
+                  </span>
+                </div>
+                {isChrome && (
+                  <div className="flex justify-between">
+                    <span>Chrome 版本：</span>
+                    <span
+                      className={
+                        chromeVersionNumber >= 89
+                          ? "text-green-600"
+                          : "text-red-600"
+                      }
+                    >
+                      {chromeVersionNumber >= 89 ? "✓" : "✗"}{" "}
+                      {chromeVersionNumber}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-2 text-sm">
+              <p className="font-medium text-gray-800">Web NFC 支持要求：</p>
+              <ul className="space-y-1 ml-4 text-gray-600">
+                <li className={isAndroid ? "text-green-600" : "text-red-600"}>
+                  • {isAndroid ? "✓" : "✗"} Android 操作系统
+                </li>
+                <li className={isChrome ? "text-green-600" : "text-red-600"}>
+                  • {isChrome ? "✓" : "✗"} Chrome 浏览器
+                </li>
+                <li
+                  className={
+                    chromeVersionNumber >= 89
+                      ? "text-green-600"
+                      : "text-red-600"
+                  }
+                >
+                  • {chromeVersionNumber >= 89 ? "✓" : "✗"} Chrome 版本 89+
+                </li>
+                <li>• 设备必须支持 NFC 硬件功能</li>
+                <li>• 系统设置中需要开启 NFC</li>
+              </ul>
+            </div>
+
+            {!isAndroid && (
+              <Alert className="border-orange-200 bg-orange-50">
+                <AlertCircle className="h-4 w-4 text-orange-600" />
+                <AlertDescription className="text-orange-800">
+                  <strong>您当前使用的不是 Android 设备。</strong>
+                  <br />
+                  Web NFC API 目前仅在 Android 设备上支持，iOS
+                  和桌面平台暂不支持。
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {isAndroid && !isChrome && (
+              <Alert className="border-blue-200 bg-blue-50">
+                <AlertCircle className="h-4 w-4 text-blue-600" />
+                <AlertDescription className="text-blue-800">
+                  <strong>请使用 Chrome 浏览器。</strong>
+                  <br />
+                  请安装或打开 Chrome 浏览器来使用 NFC 功能。
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {isAndroid && isChrome && chromeVersionNumber < 89 && (
+              <Alert className="border-yellow-200 bg-yellow-50">
+                <AlertCircle className="h-4 w-4 text-yellow-600" />
+                <AlertDescription className="text-yellow-800">
+                  <strong>Chrome 版本过低。</strong>
+                  <br />
+                  请将 Chrome 更新到 89 或更高版本。当前版本：
+                  {chromeVersionNumber}
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {isAndroid && isChrome && chromeVersionNumber >= 89 && (
+              <Alert className="border-red-200 bg-red-50">
+                <AlertCircle className="h-4 w-4 text-red-600" />
+                <AlertDescription className="text-red-800">
+                  <strong>可能的问题：</strong>
+                  <br />
+                  • 设备的 NFC 硬件不支持或已损坏
+                  <br />
+                  • 系统设置中 NFC 功能未开启
+                  <br />
+                  • Chrome 的实验性功能未启用
+                  <br />• 当前网页不是通过 HTTPS 访问
+                </AlertDescription>
+              </Alert>
+            )}
+
+            <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+              <h4 className="font-medium text-sm mb-2 text-blue-800">
+                解决步骤：
+              </h4>
+              <ol className="space-y-1 text-xs text-blue-700 ml-4 list-decimal">
+                <li>确认使用 Android 设备</li>
+                <li>安装最新版本的 Chrome 浏览器</li>
+                <li>在设置中开启 NFC 功能</li>
+                <li>确保网站通过 HTTPS 访问</li>
+                <li>
+                  如仍不支持，尝试在 Chrome 地址栏输入 chrome://flags 启用实验性
+                  Web Platform 功能
+                </li>
+              </ol>
+
+              <Button
+                onClick={() => {
+                  checkNFCSettings();
+                  alert("请查看浏览器控制台（F12）的详细检查结果");
+                }}
+                variant="outline"
+                size="sm"
+                className="mt-3"
+              >
+                运行环境诊断
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
-    )
+    );
   }
 
   return (
