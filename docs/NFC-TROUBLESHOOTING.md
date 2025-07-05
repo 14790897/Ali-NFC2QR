@@ -110,6 +110,65 @@ NetworkError: NFC communication failed
 4. 尝试不同的角度和位置
 5. 确保标签容量足够存储数据
 
+### 6. 停止扫描问题
+
+**问题：**
+点击"停止扫描"按钮后，扫描仍在继续
+
+**原因：**
+- 旧版本的应用没有正确实现停止功能
+- AbortController 未正确使用
+
+**解决方案：**
+- ✅ 已修复：现在使用 AbortController 正确停止扫描
+- 点击停止按钮会立即中止 NFC 扫描操作
+- 如果仍有问题，请刷新页面重新开始
+
+**技术实现：**
+```javascript
+// 启动扫描时创建 AbortController
+const controller = new AbortController();
+await ndefReader.scan({ signal: controller.signal });
+
+// 停止扫描时调用 abort
+controller.abort();
+```
+
+### 7. 重复扫描错误
+
+**错误信息：**
+```
+Failed to execute 'scan' on 'NDEFReader': A scan() operation is ongoing.
+```
+
+**原因：**
+- 尝试在已有扫描操作进行时启动新的扫描
+- 之前的扫描操作没有正确停止
+- 快速连续点击扫描按钮
+
+**解决方案：**
+- ✅ 已修复：应用现在会自动检测并停止之前的扫描
+- 启动新扫描前会自动清理之前的操作
+- 添加了防重复点击保护
+- 提供了"重置"按钮来强制清理状态
+
+**自动修复机制：**
+```javascript
+// 检测正在进行的扫描错误并自动重试
+if (error.message.includes('ongoing')) {
+  console.log('检测到正在进行的扫描，尝试强制停止后重试');
+  // 停止当前扫描
+  abortController.abort();
+  // 等待后重试
+  setTimeout(() => startScanning(), 500);
+}
+```
+
+**手动解决：**
+1. 点击"重置"按钮（如果可见）
+2. 等待几秒后重新尝试
+3. 刷新页面重新开始
+
 ## 浏览器兼容性检查
 
 ### 支持的浏览器

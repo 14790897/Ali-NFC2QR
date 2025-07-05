@@ -14,6 +14,7 @@ import {
   Scan,
   Edit,
   Copy,
+  RotateCcw,
 } from "lucide-react";
 
 interface NFCReadingEvent extends Event {
@@ -62,8 +63,9 @@ export default function NFCReaderComponent({ onNFCRead }: NFCReaderProps) {
   const [lastReadRecords, setLastReadRecords] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [writeSuccess, setWriteSuccess] = useState<string | null>(null);
-  const [ndefReader, setNdefReader] = useState<NFCReader | null>(null)
-  const [abortController, setAbortController] = useState<AbortController | null>(null);
+  const [ndefReader, setNdefReader] = useState<NFCReader | null>(null);
+  const [abortController, setAbortController] =
+    useState<AbortController | null>(null);
 
   useEffect(() => {
     // 检查浏览器支持
@@ -181,8 +183,24 @@ export default function NFCReaderComponent({ onNFCRead }: NFCReaderProps) {
   const startScanning = async () => {
     if (!ndefReader) return;
 
+    // 防止重复启动
+    if (isScanning) {
+      console.log("扫描已在进行中，忽略重复启动");
+      return;
+    }
+
     try {
       setError(null);
+
+      // 如果已有扫描在进行，先停止它
+      if (abortController) {
+        console.log("停止之前的扫描操作");
+        abortController.abort();
+        setAbortController(null);
+        // 等待一小段时间确保之前的扫描完全停止
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      }
+
       setIsScanning(true);
 
       // 创建新的 AbortController
@@ -280,16 +298,68 @@ export default function NFCReaderComponent({ onNFCRead }: NFCReaderProps) {
       console.error("启动NFC扫描失败:", error);
 
       // 如果是用户主动中止，不显示错误
-      if (error.name === 'AbortError') {
+      if (error.name === "AbortError") {
         console.log("NFC扫描被用户中止");
         setIsScanning(false);
         return;
       }
 
-      setError(`启动扫描失败: ${error.message}`);
+      // 如果是正在进行的扫描错误，尝试强制停止后重试
+      if (
+        error.message.includes("ongoing") ||
+        error.message.includes("operation is ongoing")
+      ) {
+        console.log("检测到正在进行的扫描，尝试强制停止后重试");
+        setIsScanning(false);
+        setAbortController(null);
+
+        // 等待更长时间后重试
+        setTimeout(() => {
+          console.log("重试启动扫描");
+          startScanning();
+        }, 500);
+        return;
+      }
+
+      let errorMessage = `启动扫描失败: ${error.message}`;
+
+      // 提供更友好的错误提示
+      if (error.message.includes("NotAllowedError")) {
+        errorMessage = "启动扫描失败: 权限被拒绝，请确保已授权 NFC 权限";
+      } else if (error.message.includes("NotSupportedError")) {
+        errorMessage = "启动扫描失败: 设备不支持 NFC 功能";
+      } else if (error.message.includes("InvalidStateError")) {
+        errorMessage = "启动扫描失败: NFC 状态无效，请检查 NFC 是否已开启";
+      }
+
+      setError(errorMessage);
       setIsScanning(false);
       setAbortController(null);
     }
+  };
+
+  // 重置 NFC 状态
+  const resetNFCState = () => {
+    console.log("重置NFC状态");
+
+    // 停止当前扫描
+    if (abortController) {
+      abortController.abort();
+      setAbortController(null);
+    }
+
+    // 清理事件监听器
+    if (ndefReader) {
+      ndefReader.onreading = null;
+      ndefReader.onreadingerror = null;
+    }
+
+    // 重置状态
+    setIsScanning(false);
+    setError(null);
+    setWriteSuccess(null);
+
+    console.log("NFC状态已重置");
   };
 
   const stopScanning = () => {
@@ -603,6 +673,18 @@ export default function NFCReaderComponent({ onNFCRead }: NFCReaderProps) {
             >
               <Edit className="w-4 h-4" />
               {isWriting ? "写入中..." : "写入到新标签"}
+            </Button>
+          )}
+
+          {(error || isScanning) && (
+            <Button
+              onClick={resetNFCState}
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2 text-orange-600 hover:text-orange-800"
+            >
+              <RotateCcw className="w-4 h-4" />
+              重置
             </Button>
           )}
         </div>
