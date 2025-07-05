@@ -169,6 +169,63 @@ if (error.message.includes('ongoing')) {
 2. 等待几秒后重新尝试
 3. 刷新页面重新开始
 
+### 8. 数据格式错误
+
+**错误信息：**
+```
+Failed to execute 'write' on 'NDEFReader': The data for url NDEFRecord must be a String.
+```
+
+**原因：**
+- URL 类型的 NDEF 记录需要字符串数据，但传递了 Uint8Array
+- 不同类型的 NDEF 记录对数据格式有特定要求
+- 读取时保存的数据格式与写入时需要的格式不匹配
+
+**解决方案：**
+- ✅ 已修复：应用现在会根据记录类型自动转换数据格式
+- URL 记录：自动将 Uint8Array 转换为字符串
+- 文本记录：使用正确的编码解码为字符串
+- MIME 记录：保持原始数据格式
+
+**数据格式要求：**
+```javascript
+// 正确的数据格式
+{
+  recordType: "url",
+  data: "https://example.com"  // 字符串，不是 Uint8Array
+}
+
+{
+  recordType: "text",
+  data: "Hello World",  // 字符串
+  encoding: "utf-8",
+  lang: "en"
+}
+
+{
+  recordType: "mime",
+  data: new Uint8Array([...]),  // 可以是 Uint8Array
+  mediaType: "application/json"
+}
+```
+
+**自动修复机制：**
+```javascript
+// 根据记录类型自动转换数据格式
+switch (record.recordType) {
+  case 'url':
+    if (record.data instanceof Uint8Array) {
+      cleanRecord.data = new TextDecoder().decode(record.data);
+    }
+    break;
+  case 'text':
+    if (record.data instanceof Uint8Array) {
+      cleanRecord.data = new TextDecoder(record.encoding || 'utf-8').decode(record.data);
+    }
+    break;
+}
+```
+
 ## 浏览器兼容性检查
 
 ### 支持的浏览器

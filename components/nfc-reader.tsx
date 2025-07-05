@@ -115,7 +115,6 @@ export default function NFCReaderComponent({ onNFCRead }: NFCReaderProps) {
   const validateAndCleanRecord = (record: any) => {
     const cleanRecord: any = {
       recordType: record.recordType,
-      data: record.data,
     };
 
     // 验证必需字段
@@ -127,9 +126,17 @@ export default function NFCReaderComponent({ onNFCRead }: NFCReaderProps) {
       throw new Error("记录缺少 data 字段");
     }
 
-    // 根据记录类型添加相应属性
+    // 根据记录类型处理数据格式
     switch (record.recordType) {
       case "text":
+        // 文本记录需要字符串数据
+        if (record.data instanceof Uint8Array) {
+          const textDecoder = new TextDecoder(record.encoding || "utf-8");
+          cleanRecord.data = textDecoder.decode(record.data);
+        } else {
+          cleanRecord.data = record.data;
+        }
+
         if (record.encoding) {
           cleanRecord.encoding = record.encoding;
         }
@@ -138,19 +145,39 @@ export default function NFCReaderComponent({ onNFCRead }: NFCReaderProps) {
         }
         break;
 
+      case "url":
+      case "absolute-url":
+        // URL 记录必须是字符串数据
+        if (record.data instanceof Uint8Array) {
+          const urlDecoder = new TextDecoder();
+          cleanRecord.data = urlDecoder.decode(record.data);
+        } else {
+          cleanRecord.data = record.data;
+        }
+        break;
+
       case "mime":
+        // MIME 记录保持原始数据格式
+        cleanRecord.data = record.data;
         if (record.mediaType) {
           cleanRecord.mediaType = record.mediaType;
         }
         break;
 
-      case "url":
-      case "absolute-url":
-        // URL 记录不需要额外属性
-        break;
-
       default:
         console.log(`处理未知记录类型: ${record.recordType}`);
+        // 对于未知类型，尝试转换为字符串
+        if (record.data instanceof Uint8Array) {
+          try {
+            const decoder = new TextDecoder();
+            cleanRecord.data = decoder.decode(record.data);
+          } catch (e) {
+            // 如果无法解码为文本，保持原始数据
+            cleanRecord.data = record.data;
+          }
+        } else {
+          cleanRecord.data = record.data;
+        }
     }
 
     // 添加 ID（如果存在）
@@ -158,6 +185,7 @@ export default function NFCReaderComponent({ onNFCRead }: NFCReaderProps) {
       cleanRecord.id = record.id;
     }
 
+    console.log(`清理后的记录:`, cleanRecord);
     return cleanRecord;
   };
 

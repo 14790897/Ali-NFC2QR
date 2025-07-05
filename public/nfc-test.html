@@ -313,32 +313,69 @@
 
                 const message = {
                     records: lastReadRecords.map(record => {
-                        const baseRecord = {
-                            recordType: record.recordType,
-                            data: record.data
+                        const cleanRecord = {
+                            recordType: record.recordType
                         };
 
-                        // 只为特定记录类型添加相应的属性
+                        // 根据记录类型处理数据格式
+                        switch (record.recordType) {
+                            case 'text':
+                                // 文本记录需要字符串数据
+                                if (record.data instanceof Uint8Array) {
+                                    const textDecoder = new TextDecoder(record.encoding || 'utf-8');
+                                    cleanRecord.data = textDecoder.decode(record.data);
+                                } else {
+                                    cleanRecord.data = record.data;
+                                }
+
+                                if (record.encoding) {
+                                    cleanRecord.encoding = record.encoding;
+                                }
+                                if (record.lang) {
+                                    cleanRecord.lang = record.lang;
+                                }
+                                break;
+
+                            case 'url':
+                            case 'absolute-url':
+                                // URL 记录必须是字符串数据
+                                if (record.data instanceof Uint8Array) {
+                                    const urlDecoder = new TextDecoder();
+                                    cleanRecord.data = urlDecoder.decode(record.data);
+                                } else {
+                                    cleanRecord.data = record.data;
+                                }
+                                break;
+
+                            case 'mime':
+                                // MIME 记录保持原始数据格式
+                                cleanRecord.data = record.data;
+                                if (record.mediaType) {
+                                    cleanRecord.mediaType = record.mediaType;
+                                }
+                                break;
+
+                            default:
+                                // 对于未知类型，尝试转换为字符串
+                                if (record.data instanceof Uint8Array) {
+                                    try {
+                                        const decoder = new TextDecoder();
+                                        cleanRecord.data = decoder.decode(record.data);
+                                    } catch (e) {
+                                        cleanRecord.data = record.data;
+                                    }
+                                } else {
+                                    cleanRecord.data = record.data;
+                                }
+                        }
+
+                        // 添加 ID（如果存在）
                         if (record.id) {
-                            baseRecord.id = record.id;
+                            cleanRecord.id = record.id;
                         }
 
-                        // 只为 mime 类型记录添加 mediaType
-                        if (record.recordType === 'mime' && record.mediaType) {
-                            baseRecord.mediaType = record.mediaType;
-                        }
-
-                        // 只为 text 类型记录添加 encoding 和 lang
-                        if (record.recordType === 'text') {
-                            if (record.encoding) {
-                                baseRecord.encoding = record.encoding;
-                            }
-                            if (record.lang) {
-                                baseRecord.lang = record.lang;
-                            }
-                        }
-
-                        return baseRecord;
+                        console.log('清理后的记录:', cleanRecord);
+                        return cleanRecord;
                     })
                 };
 
