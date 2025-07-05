@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<browserconfig>
+    <msapplication>
+        <tile>
+            <square70x70logo src="/favicon.svg"/>
+            <square150x150logo src="/favicon.svg"/>
+            <square310x310logo src="/alipay-logo.svg"/>
+            <TileColor>#00A0EA</TileColor>
+        </tile>
+    </msapplication>
+</browserconfig>

@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import QRCode from "qrcode";
 import NFCReaderComponent from "@/components/nfc-reader";
+import StructuredData from "@/components/structured-data";
 
 interface DecodeResult {
   originalLink: string;
@@ -317,254 +318,259 @@ export default function AlipayNFCDecoder() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
-      <div className="max-w-4xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="text-center py-8">
-          <div className="flex justify-center items-center gap-4 mb-4">
-            <h1 className="text-4xl font-bold text-gray-900">
-              支付宝 NFC 链接解码器
-            </h1>
-            <a
-              href="https://github.com/14790897/Ali-NFC2QR"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
-            >
-              <Github className="w-5 h-5" />
-              <span className="hidden sm:inline">GitHub</span>
-              <ExternalLink className="w-4 h-4" />
-            </a>
+    <>
+      <StructuredData />
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+        <div className="max-w-4xl mx-auto space-y-6">
+          {/* Header */}
+          <div className="text-center py-8">
+            <div className="flex justify-center items-center gap-4 mb-4">
+              <h1 className="text-4xl font-bold text-gray-900">
+                支付宝 NFC 链接解码器
+              </h1>
+              <a
+                href="https://github.com/14790897/Ali-NFC2QR"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
+              >
+                <Github className="w-5 h-5" />
+                <span className="hidden sm:inline">GitHub</span>
+                <ExternalLink className="w-4 h-4" />
+              </a>
+            </div>
+            <p className="text-gray-600">解码支付宝 NFC 链接并生成二维码</p>
           </div>
-          <p className="text-gray-600">解码支付宝 NFC 链接并生成二维码</p>
-        </div>
 
-        {/* NFC Reader Section */}
-        <NFCReaderComponent onNFCRead={handleNFCRead} />
+          {/* NFC Reader Section */}
+          <NFCReaderComponent onNFCRead={handleNFCRead} />
 
-        {/* Input Section */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Link className="w-5 h-5" />
-              输入 NFC 链接
-            </CardTitle>
-            <CardDescription>
-              请输入完整的支付宝 NFC 链接进行解码
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="nfc-url">NFC 链接</Label>
-              <Textarea
-                id="nfc-url"
-                placeholder="https://render.alipay.com/p/s/ulink/sn?s=dc&scheme=..."
-                value={inputUrl}
-                onChange={(e) => setInputUrl(e.target.value)}
-                rows={3}
-                className="resize-none"
-              />
-            </div>
-            <Button
-              onClick={handleDecode}
-              disabled={!inputUrl.trim() || isLoading}
-              className="w-full"
-            >
-              {isLoading ? "解码中..." : "开始解码"}
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Results Section */}
-        {decodeResult && (
-          <div className="grid md:grid-cols-2 gap-6">
-            {/* Decode Results */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  {decodeResult.success ? (
-                    <CheckCircle className="w-5 h-5 text-green-500" />
-                  ) : (
-                    <AlertCircle className="w-5 h-5 text-red-500" />
-                  )}
-                  解码结果
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {decodeResult.success ? (
-                  <>
-                    <div className="space-y-2">
-                      <Label>原始链接</Label>
-                      <div className="flex gap-2">
-                        <Input
-                          value={decodeResult.originalLink}
-                          readOnly
-                          className="text-sm"
-                        />
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() =>
-                            copyToClipboard(decodeResult.originalLink)
-                          }
-                        >
-                          <Copy className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>收款码</Label>
-                      <div className="flex gap-2">
-                        <Input
-                          value={decodeResult.paymentCode}
-                          readOnly
-                          className="text-sm"
-                        />
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() =>
-                            copyToClipboard(decodeResult.paymentCode)
-                          }
-                        >
-                          <Copy className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </>
-                ) : (
-                  <Alert variant="destructive">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>
-                      {decodeResult.error || "解码失败"}
-                    </AlertDescription>
-                  </Alert>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* QR Code */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <QrCode className="w-5 h-5" />
-                  二维码
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {qrCodeDataUrl ? (
-                  <div className="space-y-4">
-                    <div className="flex justify-center">
-                      <div className="p-4 bg-white rounded-lg shadow-sm border">
-                        <img
-                          src={qrCodeDataUrl || "/placeholder.svg"}
-                          alt="支付宝收款二维码"
-                          className="w-64 h-64"
-                        />
-                      </div>
-                    </div>
-                    <Button
-                      onClick={downloadQRCode}
-                      variant="outline"
-                      className="w-full bg-transparent"
-                    >
-                      <Download className="w-4 h-4 mr-2" />
-                      下载二维码
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-center h-64 text-gray-500">
-                    <div className="text-center">
-                      <QrCode className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                      <p>解码成功后将显示二维码</p>
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
-        {/* Instructions */}
-        <Card>
-          <CardHeader>
-            <CardTitle>使用说明</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2 text-sm text-gray-600">
-              <h4 className="font-semibold text-gray-900">
-                方法一：NFC 读取与写入（推荐）
-              </h4>
-              <p>1. 在支持的设备上点击"开始扫描 NFC"</p>
-              <p>2. 将手机靠近支付宝 NFC 标签（2-4厘米距离）</p>
-              <p>3. 系统将自动读取并解码 NFC 数据</p>
-              <p>4. 自动生成对应的二维码</p>
-              <p>
-                5. <strong>可选：</strong>
-                点击"写入到新标签"将数据复制到其他NFC标签
-              </p>
-            </div>
-
-            <div className="space-y-2 text-sm text-gray-600">
-              <h4 className="font-semibold text-gray-900">方法二：手动输入</h4>
-              <p>1. 将完整的支付宝 NFC 链接粘贴到输入框中</p>
-              <p>2. 点击"开始解码"按钮进行解析</p>
-              <p>3. 系统将自动提取原始链接和收款码</p>
-              <p>4. 如果解码成功，将自动生成对应的二维码</p>
-              <p>5. 可以复制链接或下载二维码图片</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Project Info */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Github className="w-5 h-5" />
-              项目信息
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid md:grid-cols-2 gap-4 text-sm">
-              <div>
-                <h4 className="font-semibold text-gray-900 mb-2">开源项目</h4>
-                <p className="text-gray-600 mb-2">
-                  Ali-NFC2QR 是一个开源项目，欢迎贡献代码和提出建议。
-                </p>
-                <a
-                  href="https://github.com/14790897/Ali-NFC2QR"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800"
-                >
-                  查看源码 <ExternalLink className="w-3 h-3" />
-                </a>
+          {/* Input Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Link className="w-5 h-5" />
+                输入 NFC 链接
+              </CardTitle>
+              <CardDescription>
+                请输入完整的支付宝 NFC 链接进行解码
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="nfc-url">NFC 链接</Label>
+                <Textarea
+                  id="nfc-url"
+                  placeholder="https://render.alipay.com/p/s/ulink/sn?s=dc&scheme=..."
+                  value={inputUrl}
+                  onChange={(e) => setInputUrl(e.target.value)}
+                  rows={3}
+                  className="resize-none"
+                />
               </div>
-              <div>
-                <h4 className="font-semibold text-gray-900 mb-2">技术栈</h4>
-                <div className="flex flex-wrap gap-2">
-                  <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">
-                    Next.js
-                  </span>
-                  <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">
-                    React
-                  </span>
-                  <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">
-                    TypeScript
-                  </span>
-                  <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">
-                    Tailwind CSS
-                  </span>
-                  <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">
-                    QRCode.js
-                  </span>
+              <Button
+                onClick={handleDecode}
+                disabled={!inputUrl.trim() || isLoading}
+                className="w-full"
+              >
+                {isLoading ? "解码中..." : "开始解码"}
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Results Section */}
+          {decodeResult && (
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* Decode Results */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    {decodeResult.success ? (
+                      <CheckCircle className="w-5 h-5 text-green-500" />
+                    ) : (
+                      <AlertCircle className="w-5 h-5 text-red-500" />
+                    )}
+                    解码结果
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {decodeResult.success ? (
+                    <>
+                      <div className="space-y-2">
+                        <Label>原始链接</Label>
+                        <div className="flex gap-2">
+                          <Input
+                            value={decodeResult.originalLink}
+                            readOnly
+                            className="text-sm"
+                          />
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() =>
+                              copyToClipboard(decodeResult.originalLink)
+                            }
+                          >
+                            <Copy className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>收款码</Label>
+                        <div className="flex gap-2">
+                          <Input
+                            value={decodeResult.paymentCode}
+                            readOnly
+                            className="text-sm"
+                          />
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() =>
+                              copyToClipboard(decodeResult.paymentCode)
+                            }
+                          >
+                            <Copy className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <Alert variant="destructive">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>
+                        {decodeResult.error || "解码失败"}
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* QR Code */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <QrCode className="w-5 h-5" />
+                    二维码
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {qrCodeDataUrl ? (
+                    <div className="space-y-4">
+                      <div className="flex justify-center">
+                        <div className="p-4 bg-white rounded-lg shadow-sm border">
+                          <img
+                            src={qrCodeDataUrl || "/placeholder.svg"}
+                            alt="支付宝收款二维码"
+                            className="w-64 h-64"
+                          />
+                        </div>
+                      </div>
+                      <Button
+                        onClick={downloadQRCode}
+                        variant="outline"
+                        className="w-full bg-transparent"
+                      >
+                        <Download className="w-4 h-4 mr-2" />
+                        下载二维码
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center h-64 text-gray-500">
+                      <div className="text-center">
+                        <QrCode className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                        <p>解码成功后将显示二维码</p>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {/* Instructions */}
+          <Card>
+            <CardHeader>
+              <CardTitle>使用说明</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2 text-sm text-gray-600">
+                <h4 className="font-semibold text-gray-900">
+                  方法一：NFC 读取与写入（推荐）
+                </h4>
+                <p>1. 在支持的设备上点击"开始扫描 NFC"</p>
+                <p>2. 将手机靠近支付宝 NFC 标签（2-4厘米距离）</p>
+                <p>3. 系统将自动读取并解码 NFC 数据</p>
+                <p>4. 自动生成对应的二维码</p>
+                <p>
+                  5. <strong>可选：</strong>
+                  点击"写入到新标签"将数据复制到其他NFC标签
+                </p>
+              </div>
+
+              <div className="space-y-2 text-sm text-gray-600">
+                <h4 className="font-semibold text-gray-900">
+                  方法二：手动输入
+                </h4>
+                <p>1. 将完整的支付宝 NFC 链接粘贴到输入框中</p>
+                <p>2. 点击"开始解码"按钮进行解析</p>
+                <p>3. 系统将自动提取原始链接和收款码</p>
+                <p>4. 如果解码成功，将自动生成对应的二维码</p>
+                <p>5. 可以复制链接或下载二维码图片</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Project Info */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Github className="w-5 h-5" />
+                项目信息
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid md:grid-cols-2 gap-4 text-sm">
+                <div>
+                  <h4 className="font-semibold text-gray-900 mb-2">开源项目</h4>
+                  <p className="text-gray-600 mb-2">
+                    Ali-NFC2QR 是一个开源项目，欢迎贡献代码和提出建议。
+                  </p>
+                  <a
+                    href="https://github.com/14790897/Ali-NFC2QR"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800"
+                  >
+                    查看源码 <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-gray-900 mb-2">技术栈</h4>
+                  <div className="flex flex-wrap gap-2">
+                    <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">
+                      Next.js
+                    </span>
+                    <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">
+                      React
+                    </span>
+                    <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">
+                      TypeScript
+                    </span>
+                    <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">
+                      Tailwind CSS
+                    </span>
+                    <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">
+                      QRCode.js
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
       </div>
-    </div>
+    </>
   );
 }

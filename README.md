@@ -20,6 +20,8 @@ Ali-NFC2QR 是一个支付宝 NFC 链接解码器，可以将支付宝的 NFC �
 - 💾 **图片下载**：下载二维码图片到本地
 - 🎨 **现代界面**：响应式设计，支持移动端和桌面端
 - 🔒 **安全可靠**：纯前端处理，数据不上传服务器
+- 🚀 **SEO 优化**：完整的搜索引擎优化，支持结构化数据
+- 📱 **PWA 支持**：可安装的渐进式网页应用
 
 ### GitHub 仓库
 
@@ -88,6 +90,8 @@ pnpm start
 - **二维码**: QRCode.js
 - **NFC**: Web NFC API
 - **图标**: Lucide React
+- **SEO**: 结构化数据 + Open Graph + Twitter Cards
+- **PWA**: Web App Manifest + Service Worker
 
 ## 项目结构
 
