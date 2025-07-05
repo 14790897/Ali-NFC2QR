@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+  <!-- 支付宝蓝色背景 -->
+  <rect width="32" height="32" rx="6" fill="#00A0EA"/>
+  
+  <!-- 简化的"支"字 -->
+  <g transform="translate(16, 16)" fill="white">
+    <!-- 上横 -->
+    <rect x="-8" y="-6" width="16" height="2" rx="1"/>
+    
+    <!-- 中横 -->
+    <rect x="-7" y="-1" width="14" height="2" rx="1"/>
+    
+    <!-- 下横 -->
+    <rect x="-8" y="4" width="16" height="2" rx="1"/>
+    
+    <!-- 左竖 -->
+    <rect x="-7" y="-6" width="2" height="12" rx="1"/>
+    
+    <!-- 右竖 -->
+    <rect x="5" y="-6" width="2" height="12" rx="1"/>
+  </g>
+</svg>

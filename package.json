@@ -1,7 +1,25 @@
 {
-  "name": "my-v0-project",
+  "name": "ali-nfc2qr",
   "version": "0.1.0",
   "private": true,
+  "description": "支付宝 NFC 链接解码器 - 将 NFC 链接转换为二维码",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/14790897/Ali-NFC2QR.git"
+  },
+  "homepage": "https://github.com/14790897/Ali-NFC2QR",
+  "bugs": {
+    "url": "https://github.com/14790897/Ali-NFC2QR/issues"
+  },
+  "author": "14790897",
+  "keywords": [
+    "alipay",
+    "nfc",
+    "qrcode",
+    "decoder",
+    "支付宝",
+    "二维码"
+  ],
   "scripts": {
     "build": "next build",
     "dev": "next dev",
