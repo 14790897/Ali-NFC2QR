@@ -59,6 +59,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "latest",
+    "critters": "^0.0.25",
     "date-fns": "4.1.0",
     "embla-carousel-react": "latest",
     "input-otp": "latest",

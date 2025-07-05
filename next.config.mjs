@@ -9,6 +9,7 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+  trailingSlash: true,
   // SEO 优化配置
   async headers() {
     return [
@@ -53,7 +54,7 @@ const nextConfig = {
       },
     ];
   },
-  // 重定向配置
+  // 重定向配置 - 在静态导出模式下禁用
   async redirects() {
     return [
       {
@@ -70,10 +71,6 @@ const nextConfig = {
   },
   // 压缩配置
   compress: true,
-  // 实验性功能
-  experimental: {
-    optimizeCss: true,
-  },
 };
 
 export default nextConfig

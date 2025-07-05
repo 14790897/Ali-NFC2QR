@@ -103,12 +103,19 @@ Ali-NFC2QR/
 │   └── page.tsx           # 主页面
 ├── components/            # React 组件
 │   ├── ui/               # UI 基础组件
-│   └── nfc-reader.tsx    # NFC 读取器组件
+│   ├── nfc-reader.tsx    # NFC 读取器组件
+│   └── structured-data.tsx # SEO 结构化数据
 ├── lib/                  # 工具函数
+│   └── version.ts        # 版本管理
+├── docs/                 # 项目文档
+│   ├── NFC-FEATURES.md   # NFC 功能说明
+│   ├── NFC-TROUBLESHOOTING.md # 故障排除指南
+│   └── SEO-CHECKLIST.md  # SEO 检查清单
 ├── public/               # 静态资源
 │   ├── alipay-logo.svg   # 支付宝图标
 │   ├── favicon.svg       # 网站图标
 │   └── nfc-test.html     # NFC 测试页面
+├── CHANGELOG.md          # 更新日志
 └── README.md
 ```
 
@@ -139,6 +146,21 @@ Continue building your app on:
 ### 问题反馈
 
 如果您遇到问题或有建议，请在 [GitHub Issues](https://github.com/14790897/Ali-NFC2QR/issues) 中提交。
+
+## 版本信息
+
+当前版本：**v1.2.0**
+
+### 最新更新 (v1.2.0)
+
+- 🔧 修复 NFC 停止扫描功能
+- 🐛 解决 "ongoing scan" 错误
+- ✨ 添加智能重试机制
+- 🔄 新增重置功能
+- 📊 完善 SEO 优化
+- 📱 添加版本号显示
+
+查看完整的 [更新日志](CHANGELOG.md) 了解所有版本的详细变更。
 
 ## 许可证
 
