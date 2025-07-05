@@ -134,7 +134,7 @@ export default function NFCReaderComponent({ onNFCRead }: NFCReaderProps) {
           const textDecoder = new TextDecoder(record.encoding || "utf-8");
           cleanRecord.data = textDecoder.decode(record.data);
         } else {
-          cleanRecord.data = record.data;
+          cleanRecord.data = String(record.data);
         }
 
         if (record.encoding) {
@@ -152,13 +152,22 @@ export default function NFCReaderComponent({ onNFCRead }: NFCReaderProps) {
           const urlDecoder = new TextDecoder();
           cleanRecord.data = urlDecoder.decode(record.data);
         } else {
-          cleanRecord.data = record.data;
+          cleanRecord.data = String(record.data);
         }
         break;
 
       case "mime":
-        // MIME 记录保持原始数据格式
-        cleanRecord.data = record.data;
+        // MIME 记录需要 BufferSource 数据
+        if (record.data instanceof Uint8Array) {
+          cleanRecord.data = record.data;
+        } else if (typeof record.data === 'string') {
+          // 如果是字符串，转换为 Uint8Array
+          const encoder = new TextEncoder();
+          cleanRecord.data = encoder.encode(record.data);
+        } else {
+          cleanRecord.data = record.data;
+        }
+        
         if (record.mediaType) {
           cleanRecord.mediaType = record.mediaType;
         }
@@ -166,17 +175,17 @@ export default function NFCReaderComponent({ onNFCRead }: NFCReaderProps) {
 
       default:
         console.log(`处理未知记录类型: ${record.recordType}`);
-        // 对于未知类型，尝试转换为字符串
+        // 对于外部类型和未知类型，必须提供 BufferSource
         if (record.data instanceof Uint8Array) {
-          try {
-            const decoder = new TextDecoder();
-            cleanRecord.data = decoder.decode(record.data);
-          } catch (e) {
-            // 如果无法解码为文本，保持原始数据
-            cleanRecord.data = record.data;
-          }
-        } else {
           cleanRecord.data = record.data;
+        } else if (typeof record.data === 'string') {
+          // 将字符串转换为 Uint8Array
+          const encoder = new TextEncoder();
+          cleanRecord.data = encoder.encode(record.data);
+        } else {
+          // 如果不是字符串或 Uint8Array，尝试序列化
+          const encoder = new TextEncoder();
+          cleanRecord.data = encoder.encode(String(record.data));
         }
     }
 
@@ -420,15 +429,28 @@ export default function NFCReaderComponent({ onNFCRead }: NFCReaderProps) {
       setWriteSuccess(null);
       setIsWriting(true);
 
-      // 构建NDEF消息，使用验证函数清理记录
+      // 详细验证和清理记录
+      console.log("原始记录数据:", lastReadRecords);
+      
+      const cleanedRecords = lastReadRecords.map((record, index) => {
+        try {
+          console.log(`处理记录 ${index}:`, record);
+          const cleaned = validateAndCleanRecord(record);
+          console.log(`记录 ${index} 清理结果:`, cleaned);
+          return cleaned;
+        } catch (recordError: any) {
+          console.error(`记录 ${index} 清理失败:`, recordError);
+          throw new Error(`记录 ${index} 格式错误: ${recordError.message}`);
+        }
+      });
+
+      // 构建NDEF消息
       const message = {
-        records: lastReadRecords.map((record) =>
-          validateAndCleanRecord(record)
-        ),
+        records: cleanedRecords,
       };
 
-      console.log("准备写入的NDEF消息:", message);
-      console.log("原始记录数据:", lastReadRecords);
+      console.log("最终NDEF消息:", message);
+      console.log("记录详情:", JSON.stringify(message, null, 2));
 
       await ndefReader.write(message);
       setWriteSuccess("数据已成功写入到NFC标签！");
@@ -444,7 +466,10 @@ export default function NFCReaderComponent({ onNFCRead }: NFCReaderProps) {
       let errorMessage = `写入失败: ${error.message}`;
 
       // 提供更友好的错误提示
-      if (error.message.includes("mediaType")) {
+      if (error.message.includes("BufferSource")) {
+        errorMessage =
+          "写入失败: 数据格式错误，外部类型记录需要 BufferSource 格式的数据";
+      } else if (error.message.includes("mediaType")) {
         errorMessage =
           "写入失败: 记录格式错误，mediaType 属性只能用于 MIME 类型记录";
       } else if (error.message.includes("NotAllowedError")) {
@@ -458,6 +483,40 @@ export default function NFCReaderComponent({ onNFCRead }: NFCReaderProps) {
       }
 
       setError(errorMessage);
+    } finally {
+      setIsWriting(false);
+    }
+  };
+
+  // 简化的NFC写入功能 - 创建新的文本记录
+  const writeSimpleText = async (text: string) => {
+    if (!ndefReader) return;
+
+    try {
+      setError(null);
+      setWriteSuccess(null);
+      setIsWriting(true);
+
+      // 创建简单的文本记录
+      const message = {
+        records: [
+          {
+            recordType: "text",
+            data: text,
+            encoding: "utf-8",
+            lang: "zh"
+          }
+        ]
+      };
+
+      console.log("写入简单文本记录:", message);
+
+      await ndefReader.write(message);
+      setWriteSuccess(`文本 "${text}" 已成功写入到NFC标签！`);
+      console.log("简单文本写入成功");
+    } catch (error: any) {
+      console.error("简单文本写入失败:", error);
+      setError(`写入失败: ${error.message}`);
     } finally {
       setIsWriting(false);
     }
@@ -694,15 +753,30 @@ export default function NFCReaderComponent({ onNFCRead }: NFCReaderProps) {
           )}
 
           {lastReadRecords.length > 0 && (
-            <Button
-              onClick={writeToNFC}
-              disabled={isWriting || isScanning}
-              variant="secondary"
-              className="flex items-center gap-2"
-            >
-              <Edit className="w-4 h-4" />
-              {isWriting ? "写入中..." : "写入到新标签"}
-            </Button>
+            <>
+              <Button
+                onClick={writeToNFC}
+                disabled={isWriting || isScanning}
+                variant="secondary"
+                className="flex items-center gap-2"
+              >
+                <Edit className="w-4 h-4" />
+                {isWriting ? "写入中..." : "写入到新标签"}
+              </Button>
+              
+              {lastReadData && (
+                <Button
+                  onClick={() => writeSimpleText(lastReadData)}
+                  disabled={isWriting || isScanning}
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center gap-2"
+                >
+                  <Copy className="w-4 h-4" />
+                  写入文本
+                </Button>
+              )}
+            </>
           )}
 
           {(error || isScanning) && (
