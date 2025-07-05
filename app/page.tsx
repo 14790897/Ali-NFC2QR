@@ -494,12 +494,16 @@ export default function AlipayNFCDecoder() {
           <CardContent className="space-y-4">
             <div className="space-y-2 text-sm text-gray-600">
               <h4 className="font-semibold text-gray-900">
-                方法一：NFC 读取（推荐）
+                方法一：NFC 读取与写入（推荐）
               </h4>
               <p>1. 在支持的设备上点击"开始扫描 NFC"</p>
               <p>2. 将手机靠近支付宝 NFC 标签（2-4厘米距离）</p>
               <p>3. 系统将自动读取并解码 NFC 数据</p>
               <p>4. 自动生成对应的二维码</p>
+              <p>
+                5. <strong>可选：</strong>
+                点击"写入到新标签"将数据复制到其他NFC标签
+              </p>
             </div>
 
             <div className="space-y-2 text-sm text-gray-600">

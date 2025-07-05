@@ -5,55 +5,70 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
-import { Smartphone, Wifi, WifiOff, AlertCircle, CheckCircle, Scan } from "lucide-react"
+import {
+  Smartphone,
+  Wifi,
+  WifiOff,
+  AlertCircle,
+  CheckCircle,
+  Scan,
+  Edit,
+  Copy,
+} from "lucide-react";
 
 interface NFCReadingEvent extends Event {
-  serialNumber: string
+  serialNumber: string;
   message: {
     records: Array<{
-      recordType: string
-      mediaType?: string
-      id?: string
-      data: DataView
-      encoding?: string
-      lang?: string
-    }>
-  }
+      recordType: string;
+      mediaType?: string;
+      id?: string;
+      data: DataView;
+      encoding?: string;
+      lang?: string;
+    }>;
+  };
 }
 
 interface NFCReader {
-  scan(options?: { signal?: AbortSignal }): Promise<void>
-  write(message: any, options?: { overwrite?: boolean; signal?: AbortSignal }): Promise<void>
-  makeReadOnly(options?: { signal?: AbortSignal }): Promise<void>
-  onreading: ((event: NFCReadingEvent) => void) | null
-  onreadingerror: ((event: Event) => void) | null
+  scan(options?: { signal?: AbortSignal }): Promise<void>;
+  write(
+    message: any,
+    options?: { overwrite?: boolean; signal?: AbortSignal }
+  ): Promise<void>;
+  makeReadOnly(options?: { signal?: AbortSignal }): Promise<void>;
+  onreading: ((event: NFCReadingEvent) => void) | null;
+  onreadingerror: ((event: Event) => void) | null;
 }
 
 declare global {
   interface Window {
     NDEFReader: {
-      new(): NFCReader
-    }
+      new (): NFCReader;
+    };
   }
 }
 
 interface NFCReaderProps {
-  onNFCRead?: (url: string) => void
+  onNFCRead?: (url: string) => void;
 }
 
 export default function NFCReaderComponent({ onNFCRead }: NFCReaderProps) {
-  const [isSupported, setIsSupported] = useState(false)
-  const [isScanning, setIsScanning] = useState(false)
-  const [hasPermission, setHasPermission] = useState<boolean | null>(null)
-  const [lastReadData, setLastReadData] = useState<string | null>(null)
-  const [error, setError] = useState<string | null>(null)
-  const [ndefReader, setNdefReader] = useState<NFCReader | null>(null)
+  const [isSupported, setIsSupported] = useState(false);
+  const [isScanning, setIsScanning] = useState(false);
+  const [isWriting, setIsWriting] = useState(false);
+  const [hasPermission, setHasPermission] = useState<boolean | null>(null);
+  const [lastReadData, setLastReadData] = useState<string | null>(null);
+  const [lastReadRecords, setLastReadRecords] = useState<any[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [writeSuccess, setWriteSuccess] = useState<string | null>(null);
+  const [ndefReader, setNdefReader] = useState<NFCReader | null>(null);
 
   useEffect(() => {
     // 检查浏览器支持
-    if ('NDEFReader' in window) {
-      setIsSupported(true)
-      setNdefReader(new window.NDEFReader())
+    if ("NDEFReader" in window) {
+      setIsSupported(true);
+      setNdefReader(new window.NDEFReader());
     } else {
       setIsSupported(false);
       // 详细检查不支持的原因
@@ -65,23 +80,25 @@ export default function NFCReaderComponent({ onNFCRead }: NFCReaderProps) {
     }
 
     // 检查权限状态
-    checkPermission()
-  }, [])
+    checkPermission();
+  }, []);
 
   const checkPermission = async () => {
     try {
-      if ('permissions' in navigator) {
-        const permissionStatus = await navigator.permissions.query({ name: 'nfc' as PermissionName })
-        setHasPermission(permissionStatus.state === 'granted')
-        
+      if ("permissions" in navigator) {
+        const permissionStatus = await navigator.permissions.query({
+          name: "nfc" as PermissionName,
+        });
+        setHasPermission(permissionStatus.state === "granted");
+
         permissionStatus.onchange = () => {
-          setHasPermission(permissionStatus.state === 'granted')
-        }
+          setHasPermission(permissionStatus.state === "granted");
+        };
       }
     } catch (error) {
-      console.log('无法检查NFC权限状态:', error)
+      console.log("无法检查NFC权限状态:", error);
     }
-  }
+  };
 
   const checkNFCSettings = () => {
     const checks = {
@@ -104,22 +121,37 @@ export default function NFCReaderComponent({ onNFCRead }: NFCReaderProps) {
   };
 
   const startScanning = async () => {
-    if (!ndefReader) return
+    if (!ndefReader) return;
 
     try {
-      setError(null)
-      setIsScanning(true)
+      setError(null);
+      setIsScanning(true);
 
-      await ndefReader.scan()
-      console.log('NFC扫描已开始')
+      await ndefReader.scan();
+      console.log("NFC扫描已开始");
 
       ndefReader.onreading = (event: NFCReadingEvent) => {
-        console.log('检测到NFC标签:', event)
-        
+        console.log("检测到NFC标签:", event);
+
+        // 保存完整的记录数据用于写入
+        const records = event.message.records.map((record) => ({
+          recordType: record.recordType,
+          mediaType: record.mediaType,
+          id: record.id,
+          data: new Uint8Array(
+            record.data.buffer,
+            record.data.byteOffset,
+            record.data.byteLength
+          ),
+          encoding: record.encoding,
+          lang: record.lang,
+        }));
+        setLastReadRecords(records);
+
         // 处理读取到的数据
         for (const record of event.message.records) {
-          let data = ''
-          
+          let data = "";
+
           switch (record.recordType) {
             case "text":
               const textDecoder = new TextDecoder(record.encoding || "utf-8");
@@ -167,42 +199,75 @@ export default function NFCReaderComponent({ onNFCRead }: NFCReaderProps) {
           }
 
           if (data) {
-            setLastReadData(data)
+            setLastReadData(data);
             if (onNFCRead) {
-              onNFCRead(data)
+              onNFCRead(data);
             }
-            break // 只处理第一个有效记录
+            break; // 只处理第一个有效记录
           }
         }
-      }
+      };
 
       ndefReader.onreadingerror = (event: Event) => {
-        console.error('NFC读取错误:', event)
-        setError('无法读取NFC标签数据，请尝试其他标签')
-      }
+        console.error("NFC读取错误:", event);
+        setError("无法读取NFC标签数据，请尝试其他标签");
+      };
 
-      setHasPermission(true)
+      setHasPermission(true);
     } catch (error: any) {
-      console.error('启动NFC扫描失败:', error)
-      setError(`启动扫描失败: ${error.message}`)
-      setIsScanning(false)
+      console.error("启动NFC扫描失败:", error);
+      setError(`启动扫描失败: ${error.message}`);
+      setIsScanning(false);
     }
-  }
+  };
 
   const stopScanning = () => {
-    setIsScanning(false)
+    setIsScanning(false);
     if (ndefReader) {
-      ndefReader.onreading = null
-      ndefReader.onreadingerror = null
+      ndefReader.onreading = null;
+      ndefReader.onreadingerror = null;
     }
-  }
+  };
+
+  const writeToNFC = async () => {
+    if (!ndefReader || !lastReadRecords.length) return;
+
+    try {
+      setError(null);
+      setWriteSuccess(null);
+      setIsWriting(true);
+
+      // 构建NDEF消息
+      const message = {
+        records: lastReadRecords.map((record) => ({
+          recordType: record.recordType,
+          mediaType: record.mediaType,
+          id: record.id,
+          data: record.data,
+          encoding: record.encoding,
+          lang: record.lang,
+        })),
+      };
+
+      console.log("准备写入的NDEF消息:", message);
+
+      await ndefReader.write(message);
+      setWriteSuccess("数据已成功写入到NFC标签！");
+      console.log("NFC写入成功");
+    } catch (error: any) {
+      console.error("NFC写入失败:", error);
+      setError(`写入失败: ${error.message}`);
+    } finally {
+      setIsWriting(false);
+    }
+  };
 
   if (!isSupported) {
     const isAndroid = /Android/.test(navigator.userAgent);
     const isChrome = /Chrome/.test(navigator.userAgent);
     const chromeVersion = navigator.userAgent.match(/Chrome\/(\d+)/);
     const chromeVersionNumber = chromeVersion ? parseInt(chromeVersion[1]) : 0;
-    
+
     return (
       <Card>
         <CardHeader>
@@ -370,11 +435,13 @@ export default function NFCReaderComponent({ onNFCRead }: NFCReaderProps) {
         <CardTitle className="flex items-center gap-2">
           <Smartphone className="w-5 h-5" />
           NFC 读取器
-          {isScanning && <Badge variant="secondary" className="ml-2">扫描中</Badge>}
+          {isScanning && (
+            <Badge variant="secondary" className="ml-2">
+              扫描中
+            </Badge>
+          )}
         </CardTitle>
-        <CardDescription>
-          将手机靠近 NFC 标签以读取内容
-        </CardDescription>
+        <CardDescription>将手机靠近 NFC 标签以读取内容</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {error && (
@@ -390,20 +457,50 @@ export default function NFCReaderComponent({ onNFCRead }: NFCReaderProps) {
             <AlertDescription>
               <div className="font-medium">读取成功！</div>
               <div className="mt-1 text-sm break-all">{lastReadData}</div>
+              {lastReadRecords.length > 0 && (
+                <div className="mt-2 text-xs text-gray-500">
+                  已保存 {lastReadRecords.length} 条记录，可写入到其他NFC标签
+                </div>
+              )}
             </AlertDescription>
           </Alert>
         )}
 
-        <div className="flex gap-2">
+        {writeSuccess && (
+          <Alert>
+            <CheckCircle className="h-4 w-4" />
+            <AlertDescription>
+              <div className="font-medium">{writeSuccess}</div>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        <div className="flex flex-wrap gap-2">
           {!isScanning ? (
             <Button onClick={startScanning} className="flex items-center gap-2">
               <Scan className="w-4 h-4" />
               开始扫描 NFC
             </Button>
           ) : (
-            <Button onClick={stopScanning} variant="outline" className="flex items-center gap-2">
+            <Button
+              onClick={stopScanning}
+              variant="outline"
+              className="flex items-center gap-2"
+            >
               <WifiOff className="w-4 h-4" />
               停止扫描
+            </Button>
+          )}
+
+          {lastReadRecords.length > 0 && (
+            <Button
+              onClick={writeToNFC}
+              disabled={isWriting || isScanning}
+              variant="secondary"
+              className="flex items-center gap-2"
+            >
+              <Edit className="w-4 h-4" />
+              {isWriting ? "写入中..." : "写入到新标签"}
             </Button>
           )}
         </div>
@@ -412,9 +509,17 @@ export default function NFCReaderComponent({ onNFCRead }: NFCReaderProps) {
           <p className="font-medium">使用说明：</p>
           <ul className="space-y-1 ml-4">
             <li>• 确保设备已开启 NFC 功能</li>
-            <li>• 点击"开始扫描 NFC"按钮</li>
-            <li>• 将手机背面靠近 NFC 标签（距离 2-4 厘米）</li>
-            <li>• 等待震动反馈，表示读取成功</li>
+            <li>
+              • <strong>读取：</strong>点击"开始扫描
+              NFC"，将手机靠近标签（2-4厘米）
+            </li>
+            <li>
+              • <strong>写入：</strong>读取成功后，点击"写入到新标签"按钮
+            </li>
+            <li>
+              • <strong>写入：</strong>将手机靠近要写入的空白NFC标签
+            </li>
+            <li>• 等待震动反馈，表示操作成功</li>
           </ul>
         </div>
 
@@ -428,5 +533,5 @@ export default function NFCReaderComponent({ onNFCRead }: NFCReaderProps) {
         )}
       </CardContent>
     </Card>
-  )
+  );
 }

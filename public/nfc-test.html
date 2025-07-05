@@ -72,18 +72,28 @@
     </div>
 
     <div class="card">
+        <h2>NFC 写入</h2>
+        <button id="write-btn" disabled>写入测试数据</button>
+        <button id="write-read-btn" disabled>写入读取的数据</button>
+        <div id="write-status"></div>
+    </div>
+
+    <div class="card">
         <h2>使用说明</h2>
         <ul>
-            <li>此页面用于测试 Web NFC API 功能</li>
+            <li>此页面用于测试 Web NFC API 的读取和写入功能</li>
             <li>需要在 Android 设备上的 Chrome 89+ 浏览器中使用</li>
             <li>确保设备已开启 NFC 功能</li>
-            <li>点击"开始扫描 NFC"后，将手机靠近 NFC 标签</li>
+            <li><strong>读取：</strong>点击"开始扫描 NFC"后，将手机靠近 NFC 标签</li>
+            <li><strong>写入：</strong>点击写入按钮后，将手机靠近空白 NFC 标签</li>
+            <li><strong>复制：</strong>先读取一个标签，再点击"写入读取的数据"复制到新标签</li>
         </ul>
     </div>
 
     <script>
         let ndefReader = null;
         let isScanning = false;
+        let lastReadRecords = [];
 
         // 检查浏览器支持
         function checkSupport() {
@@ -116,12 +126,25 @@
 
                 ndefReader.onreading = (event) => {
                     console.log('NFC 读取事件:', event);
-                    
+
+                    // 保存读取的记录用于写入
+                    lastReadRecords = event.message.records.map(record => ({
+                        recordType: record.recordType,
+                        mediaType: record.mediaType,
+                        id: record.id,
+                        data: new Uint8Array(record.data.buffer, record.data.byteOffset, record.data.byteLength),
+                        encoding: record.encoding,
+                        lang: record.lang
+                    }));
+
+                    // 启用写入按钮
+                    document.getElementById('write-read-btn').disabled = false;
+
                     const dataDiv = document.getElementById('nfc-data');
                     let html = '<h3>📱 NFC 数据读取成功</h3>';
                     html += `<p><strong>序列号:</strong> ${event.serialNumber || '无'}</p>`;
                     html += '<h4>记录数据:</h4>';
-                    
+
                     event.message.records.forEach((record, index) => {
                         html += `<div class="data">`;
                         html += `<strong>记录 ${index + 1}:</strong><br>`;
@@ -173,20 +196,90 @@
                 ndefReader.onreading = null;
                 ndefReader.onreadingerror = null;
             }
-            
+
             isScanning = false;
             document.getElementById('scan-btn').disabled = false;
             document.getElementById('stop-btn').disabled = true;
-            document.getElementById('scan-status').innerHTML = 
+            document.getElementById('scan-status').innerHTML =
                 '<div class="status info">⏹️ NFC 扫描已停止</div>';
+        }
+
+        // 写入测试数据
+        async function writeTestData() {
+            if (!ndefReader) return;
+
+            try {
+                const statusDiv = document.getElementById('write-status');
+                statusDiv.innerHTML = '<div class="status info">🔄 正在写入测试数据...</div>';
+
+                const message = {
+                    records: [
+                        {
+                            recordType: "text",
+                            data: "Hello from Ali-NFC2QR Test!"
+                        },
+                        {
+                            recordType: "url",
+                            data: "https://github.com/14790897/Ali-NFC2QR"
+                        }
+                    ]
+                };
+
+                await ndefReader.write(message);
+                statusDiv.innerHTML = '<div class="status success">✅ 测试数据写入成功！</div>';
+                console.log('测试数据写入成功');
+
+            } catch (error) {
+                console.error('写入测试数据失败:', error);
+                document.getElementById('write-status').innerHTML =
+                    `<div class="status error">❌ 写入失败: ${error.message}</div>`;
+            }
+        }
+
+        // 写入读取的数据
+        async function writeReadData() {
+            if (!ndefReader || !lastReadRecords.length) return;
+
+            try {
+                const statusDiv = document.getElementById('write-status');
+                statusDiv.innerHTML = '<div class="status info">🔄 正在写入读取的数据...</div>';
+
+                const message = {
+                    records: lastReadRecords.map(record => ({
+                        recordType: record.recordType,
+                        mediaType: record.mediaType,
+                        id: record.id,
+                        data: record.data,
+                        encoding: record.encoding,
+                        lang: record.lang
+                    }))
+                };
+
+                console.log('准备写入的数据:', message);
+                await ndefReader.write(message);
+                statusDiv.innerHTML = '<div class="status success">✅ 读取的数据写入成功！</div>';
+                console.log('读取的数据写入成功');
+
+            } catch (error) {
+                console.error('写入读取的数据失败:', error);
+                document.getElementById('write-status').innerHTML =
+                    `<div class="status error">❌ 写入失败: ${error.message}</div>`;
+            }
         }
 
         // 事件监听
         document.getElementById('scan-btn').addEventListener('click', startScan);
         document.getElementById('stop-btn').addEventListener('click', stopScan);
+        document.getElementById('write-btn').addEventListener('click', writeTestData);
+        document.getElementById('write-read-btn').addEventListener('click', writeReadData);
 
         // 页面加载时检查支持
         checkSupport();
+
+        // 启用写入测试按钮（如果支持NFC）
+        if ('NDEFReader' in window) {
+            document.getElementById('write-btn').disabled = false;
+        }
     </script>
 </body>
 </html>

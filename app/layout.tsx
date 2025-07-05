@@ -1,5 +1,5 @@
-import type { Metadata } from 'next'
-import './globals.css'
+import type { Metadata, Viewport } from "next";
+import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Ali-NFC2QR - 支付宝 NFC 链接解码器",
@@ -20,9 +20,7 @@ export const metadata: Metadata = {
   generator: "Next.js",
   applicationName: "Ali-NFC2QR",
   referrer: "origin-when-cross-origin",
-  colorScheme: "light",
-  themeColor: "#00A0EA",
-  viewport: "width=device-width, initial-scale=1",
+
   robots: "index, follow",
   icons: {
     icon: "/favicon.svg",
@@ -52,6 +50,13 @@ export const metadata: Metadata = {
     description: "支付宝 NFC 链接解码器，将 NFC 链接转换为二维码。",
     images: ["/alipay-logo.svg"],
   },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  colorScheme: "light",
+  themeColor: "#00A0EA",
 };
 
 export default function RootLayout({

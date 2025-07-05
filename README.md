@@ -13,6 +13,7 @@ Ali-NFC2QR 是一个支付宝 NFC 链接解码器，可以将支付宝的 NFC �
 ### 功能特性
 
 - 📱 **NFC 读取**：直接通过手机 NFC 读取支付宝标签（Chrome for Android 89+）
+- ✏️ **NFC 写入**：将读取的数据写入到其他 NFC 标签，实现标签复制
 - 🔗 **链接解码**：解码支付宝 NFC 链接
 - 📱 **二维码生成**：生成带有支付宝图标的精美二维码
 - 📋 **一键复制**：复制解码结果到剪贴板
@@ -26,12 +27,13 @@ Ali-NFC2QR 是一个支付宝 NFC 链接解码器，可以将支付宝的 NFC �
 
 ### 使用方法
 
-#### 方法一：NFC 读取（推荐）
+#### 方法一：NFC 读取与写入（推荐）
 
 1. 使用支持 Web NFC 的设备（Android 设备上的 Chrome 89+）
 2. 点击"开始扫描 NFC"按钮
 3. 将手机靠近支付宝 NFC 标签（距离 2-4 厘米）
 4. 系统自动读取并解码，生成二维码
+5. **可选**：点击"写入到新标签"将数据复制到其他 NFC 标签
 
 #### 方法二：手动输入
 
@@ -55,12 +57,6 @@ Any changes you make to your deployed app will be automatically pushed to this r
 ```bash
 # 使用 pnpm (推荐)
 pnpm install
-
-# 或使用 npm
-npm install
-
-# 或使用 yarn
-yarn install
 ```
 
 ### 本地开发
@@ -69,8 +65,6 @@ yarn install
 # 启动开发服务器
 pnpm dev
 
-# 或
-npm run dev
 ```
 
 访问 [http://localhost:3000](http://localhost:3000) 查看应用。
