@@ -103,6 +103,7 @@ export default function AlipayNFCDecoder() {
 
   const generateQRCode = async (url: string) => {
     try {
+      // 首先生成基础二维码
       const qrDataUrl = await QRCode.toDataURL(url, {
         width: 300,
         margin: 2,
@@ -110,11 +111,112 @@ export default function AlipayNFCDecoder() {
           dark: "#000000",
           light: "#FFFFFF",
         },
-        errorCorrectionLevel: "H",
+        errorCorrectionLevel: "H", // 高纠错级别，允许添加logo
       })
-      setQrCodeDataUrl(qrDataUrl)
+
+      // 创建canvas来添加支付宝图标
+      const canvas = document.createElement("canvas")
+      const ctx = canvas.getContext("2d")
+      if (!ctx) return
+
+      // 支付宝 SVG 图标
+      const alipayLogoSvg = `<?xml version="1.0" standalone="no"?><!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd"><svg t="1751696601948" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="1624" xmlns:xlink="http://www.w3.org/1999/xlink" width="200" height="200"><path d="M860.16 0C950.272 0 1024 73.889684 1024 164.163368v531.509895s-32.768-4.122947-180.224-53.355789c-40.96-14.362947-96.256-34.896842-157.696-57.478737 36.864-63.595789 65.536-137.485474 86.016-215.444211h-202.752v-71.841684h247.808V256.512h-247.808V135.437474h-100.352c-18.432 0-18.432 18.458947-18.432 18.458947v104.663579H200.704v41.040842h249.856v69.793684H243.712v41.013895H645.12c-14.336 51.307789-34.816 98.519579-57.344 141.608421-129.024-43.115789-268.288-77.985684-356.352-55.403789-55.296 14.362947-92.16 38.992842-112.64 63.595789-96.256 116.978526-26.624 295.504842 176.128 295.504842 120.832 0 237.568-67.718737 327.68-178.526316C757.76 742.858105 1024 853.692632 1024 853.692632v6.144C1024 950.110316 950.272 1024 860.16 1024H163.84C73.728 1024 0 950.137263 0 859.836632V164.163368C0 73.889684 73.728 0 163.84 0h696.32zM268.126316 553.121684c93.049263-10.374737 180.062316 26.974316 283.270737 78.874948-74.886737 95.501474-165.941895 155.701895-256.970106 155.701894-157.830737 0-204.368842-126.652632-125.466947-197.200842 26.300632-22.851368 72.838737-35.301053 99.166316-37.376z" fill="#00A0EA" p-id="1625"></path></svg>`
+
+      // 加载二维码图片
+      const qrImage = new Image()
+      qrImage.crossOrigin = "anonymous"
+
+      qrImage.onload = () => {
+        canvas.width = qrImage.width
+        canvas.height = qrImage.height
+
+        // 绘制二维码
+        ctx.drawImage(qrImage, 0, 0)
+
+        // 计算中心位置和图标大小
+        const centerX = canvas.width / 2
+        const centerY = canvas.height / 2
+        const iconSize = Math.min(canvas.width, canvas.height) / 5
+
+        // 绘制白色圆形背景
+        ctx.fillStyle = "#FFFFFF"
+        ctx.beginPath()
+        ctx.arc(centerX, centerY, iconSize / 2 + 6, 0, 2 * Math.PI)
+        ctx.fill()
+
+        // 创建 SVG 图像
+        const svgBlob = new Blob([alipayLogoSvg], { type: "image/svg+xml" })
+        const svgUrl = URL.createObjectURL(svgBlob)
+
+        const logoImage = new Image()
+        logoImage.crossOrigin = "anonymous"
+
+        logoImage.onload = () => {
+          // 绘制支付宝图标
+          const logoX = centerX - iconSize / 2
+          const logoY = centerY - iconSize / 2
+
+          ctx.drawImage(logoImage, logoX, logoY, iconSize, iconSize)
+
+          // 清理 URL 对象
+          URL.revokeObjectURL(svgUrl)
+
+          // 更新二维码显示
+          const finalDataUrl = canvas.toDataURL("image/png")
+          setQrCodeDataUrl(finalDataUrl)
+        }
+
+        logoImage.onerror = () => {
+          // 如果 SVG 加载失败，使用备用方案
+          console.warn("SVG logo failed to load, using fallback")
+
+          // 绘制支付宝蓝色圆角矩形背景
+          const rectSize = iconSize * 0.8
+          const cornerRadius = rectSize / 8
+          const rectX = centerX - rectSize / 2
+          const rectY = centerY - rectSize / 2
+
+          ctx.fillStyle = "#00A0EA" // 支付宝蓝
+          ctx.beginPath()
+          ctx.roundRect(rectX, rectY, rectSize, rectSize, cornerRadius)
+          ctx.fill()
+
+          // 绘制白色"支"字
+          ctx.fillStyle = "#FFFFFF"
+          ctx.font = `bold ${rectSize * 0.6}px Arial, "Microsoft YaHei", sans-serif`
+          ctx.textAlign = "center"
+          ctx.textBaseline = "middle"
+          ctx.fillText("支", centerX, centerY)
+
+          // 清理 URL 对象
+          URL.revokeObjectURL(svgUrl)
+
+          // 更新二维码显示
+          const finalDataUrl = canvas.toDataURL("image/png")
+          setQrCodeDataUrl(finalDataUrl)
+        }
+
+        logoImage.src = svgUrl
+      }
+
+      qrImage.src = qrDataUrl
     } catch (error) {
       console.error("生成二维码失败:", error)
+      // 如果添加图标失败，至少显示基础二维码
+      try {
+        const basicQrDataUrl = await QRCode.toDataURL(url, {
+          width: 300,
+          margin: 2,
+          color: {
+            dark: "#000000",
+            light: "#FFFFFF",
+          },
+          errorCorrectionLevel: "H",
+        })
+        setQrCodeDataUrl(basicQrDataUrl)
+      } catch (basicError) {
+        console.error("生成基础二维码也失败:", basicError)
+      }
     }
   }
 
