@@ -20,6 +20,7 @@ import {
 import QRCode from "qrcode";
 import NFCReaderComponent from "@/components/nfc-reader";
 import StructuredData from "@/components/structured-data";
+import PromoBanner from "@/components/promo-banner";
 import { APP_VERSION } from "@/lib/version";
 
 interface DecodeResult {
@@ -341,6 +342,11 @@ export default function AlipayNFCDecoder() {
               </a>
             </div>
             <p className="text-gray-600">解码支付宝 NFC 链接并生成二维码</p>
+          </div>
+
+          {/* 宣传横幅 */}
+          <div className="mb-6">
+            <PromoBanner showCloseButton={true} />
           </div>
 
           {/* NFC Reader Section */}
