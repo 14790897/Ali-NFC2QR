@@ -2,10 +2,22 @@
 
 import { useState, useEffect } from "react"
 import { APP_VERSION, APP_NAME, LAST_UPDATED } from "@/lib/version"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Badge } from "@/components/ui/badge"
+import {
+  trackNFCEvent,
+  trackFeatureUsage,
+  trackError,
+  EVENTS,
+} from "@/lib/analytics";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import {
   Smartphone,
   Wifi,
@@ -160,14 +172,14 @@ export default function NFCReaderComponent({ onNFCRead }: NFCReaderProps) {
         // MIME 记录需要 BufferSource 数据
         if (record.data instanceof Uint8Array) {
           cleanRecord.data = record.data;
-        } else if (typeof record.data === 'string') {
+        } else if (typeof record.data === "string") {
           // 如果是字符串，转换为 Uint8Array
           const encoder = new TextEncoder();
           cleanRecord.data = encoder.encode(record.data);
         } else {
           cleanRecord.data = record.data;
         }
-        
+
         if (record.mediaType) {
           cleanRecord.mediaType = record.mediaType;
         }
@@ -178,7 +190,7 @@ export default function NFCReaderComponent({ onNFCRead }: NFCReaderProps) {
         // 对于外部类型和未知类型，必须提供 BufferSource
         if (record.data instanceof Uint8Array) {
           cleanRecord.data = record.data;
-        } else if (typeof record.data === 'string') {
+        } else if (typeof record.data === "string") {
           // 将字符串转换为 Uint8Array
           const encoder = new TextEncoder();
           cleanRecord.data = encoder.encode(record.data);
@@ -247,6 +259,12 @@ export default function NFCReaderComponent({ onNFCRead }: NFCReaderProps) {
 
       await ndefReader.scan({ signal: controller.signal });
       console.log("NFC扫描已开始");
+
+      // 追踪扫描开始事件
+      trackNFCEvent(EVENTS.NFC_SCAN_START, {
+        hasPermission,
+        userAgent: navigator.userAgent,
+      });
 
       ndefReader.onreading = (event: NFCReadingEvent) => {
         console.log("检测到NFC标签:", event);
@@ -321,6 +339,14 @@ export default function NFCReaderComponent({ onNFCRead }: NFCReaderProps) {
             if (onNFCRead) {
               onNFCRead(data);
             }
+
+            // 追踪读取成功事件
+            trackNFCEvent(EVENTS.NFC_SCAN_SUCCESS, {
+              recordCount: records.length,
+              dataLength: data.length,
+              recordTypes: records.map((r) => r.recordType),
+            });
+
             break; // 只处理第一个有效记录
           }
         }
@@ -329,6 +355,12 @@ export default function NFCReaderComponent({ onNFCRead }: NFCReaderProps) {
       ndefReader.onreadingerror = (event: Event) => {
         console.error("NFC读取错误:", event);
         setError("无法读取NFC标签数据，请尝试其他标签");
+
+        // 追踪读取错误事件
+        trackNFCEvent(EVENTS.NFC_SCAN_ERROR, {
+          error: event.type || "unknown_error",
+          timestamp: new Date().toISOString(),
+        });
       };
 
       setHasPermission(true);
@@ -431,7 +463,7 @@ export default function NFCReaderComponent({ onNFCRead }: NFCReaderProps) {
 
       // 详细验证和清理记录
       console.log("原始记录数据:", lastReadRecords);
-      
+
       const cleanedRecords = lastReadRecords.map((record, index) => {
         try {
           console.log(`处理记录 ${index}:`, record);
@@ -455,6 +487,12 @@ export default function NFCReaderComponent({ onNFCRead }: NFCReaderProps) {
       await ndefReader.write(message);
       setWriteSuccess("数据已成功写入到NFC标签！");
       console.log("NFC写入成功");
+
+      // 追踪写入成功事件
+      trackNFCEvent(EVENTS.NFC_WRITE_SUCCESS, {
+        recordCount: lastReadRecords.length,
+        recordTypes: lastReadRecords.map((r) => r.recordType),
+      });
     } catch (error: any) {
       console.error("NFC写入失败:", error);
       console.error("错误详情:", {
@@ -504,9 +542,9 @@ export default function NFCReaderComponent({ onNFCRead }: NFCReaderProps) {
             recordType: "text",
             data: text,
             encoding: "utf-8",
-            lang: "zh"
-          }
-        ]
+            lang: "zh",
+          },
+        ],
       };
 
       console.log("写入简单文本记录:", message);
@@ -763,7 +801,7 @@ export default function NFCReaderComponent({ onNFCRead }: NFCReaderProps) {
                 <Edit className="w-4 h-4" />
                 {isWriting ? "写入中..." : "写入到新标签"}
               </Button>
-              
+
               {lastReadData && (
                 <Button
                   onClick={() => writeSimpleText(lastReadData)}

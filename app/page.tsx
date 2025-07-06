@@ -22,6 +22,11 @@ import NFCReaderComponent from "@/components/nfc-reader";
 import StructuredData from "@/components/structured-data";
 import PromoBanner from "@/components/promo-banner";
 import { APP_VERSION } from "@/lib/version";
+import {
+  trackFeatureUsage,
+  trackUserInteraction,
+  EVENTS,
+} from "@/lib/analytics";
 
 interface DecodeResult {
   originalLink: string;
@@ -198,6 +203,12 @@ export default function AlipayNFCDecoder() {
           // 更新二维码显示
           const finalDataUrl = canvas.toDataURL("image/png");
           setQrCodeDataUrl(finalDataUrl);
+
+          // 追踪二维码生成成功
+          trackFeatureUsage(EVENTS.QR_GENERATE, true, {
+            hasLogo: true,
+            method: "svg_logo",
+          });
         };
 
         logoImage.onerror = () => {
@@ -293,6 +304,12 @@ export default function AlipayNFCDecoder() {
     link.download = "alipay-qr-code.png";
     link.href = qrCodeDataUrl;
     link.click();
+
+    // 追踪下载事件
+    trackFeatureUsage(EVENTS.QR_DOWNLOAD, true, {
+      format: "png",
+      filename: "alipay-qr-code.png",
+    });
   };
 
   const handleNFCRead = async (nfcData: string) => {

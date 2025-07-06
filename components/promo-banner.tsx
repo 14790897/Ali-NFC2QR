@@ -15,6 +15,7 @@ import {
   X,
 } from "lucide-react";
 import { APP_VERSION, APP_NAME } from "@/lib/version";
+import { trackUserInteraction } from "@/lib/analytics";
 
 interface PromoBannerProps {
   onClose?: () => void;
@@ -30,6 +31,9 @@ export default function PromoBanner({
   const handleClose = () => {
     setIsVisible(false);
     onClose?.();
+
+    // 追踪横幅关闭事件
+    trackUserInteraction("promo_banner", "close");
   };
 
   if (!isVisible) return null;
@@ -64,7 +68,10 @@ export default function PromoBanner({
             <Button
               size="sm"
               className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white h-7 px-3 text-xs"
-              onClick={() => (window.location.href = "/promo")}
+              onClick={() => {
+                trackUserInteraction("promo_banner", "view_details");
+                window.location.href = "/promo";
+              }}
             >
               查看详情
               <ArrowRight className="w-3 h-3 ml-1" />
@@ -74,9 +81,10 @@ export default function PromoBanner({
               variant="outline"
               size="sm"
               className="h-7 px-3 text-xs"
-              onClick={() =>
-                window.open("https://github.com/14790897/Ali-NFC2QR", "_blank")
-              }
+              onClick={() => {
+                trackUserInteraction("promo_banner", "github_click");
+                window.open("https://github.com/14790897/Ali-NFC2QR", "_blank");
+              }}
             >
               <Github className="w-3 h-3 mr-1" />
               <span className="hidden sm:inline">GitHub</span>
@@ -103,7 +111,6 @@ export default function PromoBanner({
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3">
-
             <div className="flex items-center gap-1">
               <span className="w-2 h-2 bg-green-500 rounded-full"></span>
               <span>免费</span>
