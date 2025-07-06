@@ -106,7 +106,6 @@ import PromoBanner from "@/components/promo-banner";
 
 ### 统计数据
 当前展示的统计数据：
-- GitHub Stars: 1.2k+
 - 用户使用: 500+
 - 开源免费: 100%
 - 数据收集: 0

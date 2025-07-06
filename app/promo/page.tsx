@@ -56,7 +56,6 @@ export default function PromoPage() {
   ];
 
   const stats = [
-    { number: "1.2k+", label: "GitHub Stars", icon: <Star className="w-5 h-5" /> },
     { number: "500+", label: "用户使用", icon: <Users className="w-5 h-5" /> },
     { number: "100%", label: "开源免费", icon: <Github className="w-5 h-5" /> },
     { number: "0", label: "数据收集", icon: <Shield className="w-5 h-5" /> },
@@ -86,40 +85,51 @@ export default function PromoPage() {
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-blue-600/10 to-purple-600/10" />
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-16">
-          <div className={`text-center transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+          <div
+            className={`text-center transition-all duration-1000 ${
+              isVisible
+                ? "opacity-100 translate-y-0"
+                : "opacity-0 translate-y-10"
+            }`}
+          >
             <Badge variant="secondary" className="mb-4 px-4 py-2">
               <Sparkles className="w-4 h-4 mr-2" />
               {APP_NAME} v{APP_VERSION} 现已发布
             </Badge>
-            
+
             <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6">
               支付宝 NFC 标签
               <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                 解码神器
               </span>
             </h1>
-            
+
             <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-              一键读取支付宝 NFC 收款标签，自动解码生成二维码。
-              支持 NFC 写入、标签复制，完全免费开源。
+              一键读取支付宝 NFC 收款标签，自动解码生成二维码。 支持 NFC
+              写入、标签复制，完全免费开源。
             </p>
-            
+
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <Button 
-                size="lg" 
+              <Button
+                size="lg"
                 className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-3"
-                onClick={() => window.location.href = '/'}
+                onClick={() => (window.location.href = "/")}
               >
                 <Smartphone className="w-5 h-5 mr-2" />
                 立即使用
                 <ArrowRight className="w-5 h-5 ml-2" />
               </Button>
-              
-              <Button 
-                variant="outline" 
+
+              <Button
+                variant="outline"
                 size="lg"
                 className="px-8 py-3"
-                onClick={() => window.open('https://github.com/14790897/Ali-NFC2QR', '_blank')}
+                onClick={() =>
+                  window.open(
+                    "https://github.com/14790897/Ali-NFC2QR",
+                    "_blank"
+                  )
+                }
               >
                 <Github className="w-5 h-5 mr-2" />
                 查看源码
@@ -133,7 +143,7 @@ export default function PromoPage() {
       {/* Stats Section */}
       <section className="py-16 bg-white/50 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-8">
             {stats.map((stat, index) => (
               <div key={index} className="text-center">
                 <div className="flex justify-center mb-2 text-blue-600">
@@ -142,9 +152,7 @@ export default function PromoPage() {
                 <div className="text-3xl font-bold text-gray-900 mb-1">
                   {stat.number}
                 </div>
-                <div className="text-gray-600 text-sm">
-                  {stat.label}
-                </div>
+                <div className="text-gray-600 text-sm">{stat.label}</div>
               </div>
             ))}
           </div>
@@ -162,26 +170,28 @@ export default function PromoPage() {
               专为支付宝 NFC 标签设计，提供完整的读取、解码、生成和写入解决方案
             </p>
           </div>
-          
+
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             {features.map((feature, index) => (
-              <Card key={index} className="relative overflow-hidden hover:shadow-lg transition-shadow duration-300">
+              <Card
+                key={index}
+                className="relative overflow-hidden hover:shadow-lg transition-shadow duration-300"
+              >
                 <CardContent className="p-6">
-                  <Badge variant="secondary" className="absolute top-4 right-4 text-xs">
+                  <Badge
+                    variant="secondary"
+                    className="absolute top-4 right-4 text-xs"
+                  >
                     {feature.highlight}
                   </Badge>
-                  
-                  <div className="mb-4">
-                    {feature.icon}
-                  </div>
-                  
+
+                  <div className="mb-4">{feature.icon}</div>
+
                   <h3 className="text-xl font-semibold text-gray-900 mb-2">
                     {feature.title}
                   </h3>
-                  
-                  <p className="text-gray-600">
-                    {feature.description}
-                  </p>
+
+                  <p className="text-gray-600">{feature.description}</p>
                 </CardContent>
               </Card>
             ))}
@@ -200,21 +210,19 @@ export default function PromoPage() {
               简单三步，即可完成 NFC 标签读取和二维码生成
             </p>
           </div>
-          
+
           <div className="grid md:grid-cols-3 gap-8">
             {steps.map((step, index) => (
               <div key={index} className="text-center">
                 <div className="w-16 h-16 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-full flex items-center justify-center text-xl font-bold mx-auto mb-4">
                   {step.step}
                 </div>
-                
+
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">
                   {step.title}
                 </h3>
-                
-                <p className="text-gray-600">
-                  {step.description}
-                </p>
+
+                <p className="text-gray-600">{step.description}</p>
               </div>
             ))}
           </div>
@@ -228,9 +236,7 @@ export default function PromoPage() {
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
               用户好评如潮
             </h2>
-            <p className="text-xl text-gray-600">
-              来自真实用户的使用反馈
-            </p>
+            <p className="text-xl text-gray-600">来自真实用户的使用反馈</p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
@@ -243,7 +249,8 @@ export default function PromoPage() {
                 </div>
               </div>
               <p className="text-gray-600 mb-4">
-                "太方便了！以前需要找商家要二维码，现在直接扫一下 NFC 标签就能生成，省时省力。"
+                "太方便了！以前需要找商家要二维码，现在直接扫一下 NFC
+                标签就能生成，省时省力。"
               </p>
               <div className="flex items-center">
                 <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-semibold">
@@ -287,7 +294,8 @@ export default function PromoPage() {
                 </div>
               </div>
               <p className="text-gray-600 mb-4">
-                "NFC 写入功能很棒，可以把收款码复制到多个标签，再也不怕标签丢失了。"
+                "NFC
+                写入功能很棒，可以把收款码复制到多个标签，再也不怕标签丢失了。"
               </p>
               <div className="flex items-center">
                 <div className="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center text-white font-semibold">
@@ -319,7 +327,7 @@ export default function PromoPage() {
               size="lg"
               variant="secondary"
               className="px-8 py-3"
-              onClick={() => window.location.href = '/'}
+              onClick={() => (window.location.href = "/")}
             >
               <Smartphone className="w-5 h-5 mr-2" />
               开始使用
@@ -329,7 +337,9 @@ export default function PromoPage() {
               size="lg"
               variant="outline"
               className="px-8 py-3 text-white border-white hover:bg-white hover:text-blue-600"
-              onClick={() => window.open('https://github.com/14790897/Ali-NFC2QR', '_blank')}
+              onClick={() =>
+                window.open("https://github.com/14790897/Ali-NFC2QR", "_blank")
+              }
             >
               <Github className="w-5 h-5 mr-2" />
               查看源码
@@ -343,18 +353,16 @@ export default function PromoPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <h3 className="text-2xl font-bold mb-4">{APP_NAME}</h3>
-            <p className="text-gray-400 mb-6">
-              开源的支付宝 NFC 链接解码器
-            </p>
-            
+            <p className="text-gray-400 mb-6">开源的支付宝 NFC 链接解码器</p>
+
             <div className="flex justify-center items-center space-x-6 text-sm text-gray-400">
               <span>© 2024 Ali-NFC2QR</span>
               <span>•</span>
               <span>MIT License</span>
               <span>•</span>
-              <a 
-                href="https://github.com/14790897/Ali-NFC2QR" 
-                target="_blank" 
+              <a
+                href="https://github.com/14790897/Ali-NFC2QR"
+                target="_blank"
                 rel="noopener noreferrer"
                 className="hover:text-white transition-colors"
               >
