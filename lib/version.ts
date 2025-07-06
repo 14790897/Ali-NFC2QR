@@ -9,38 +9,38 @@ export const BUILD_DATE = new Date().toISOString().split('T')[0];
 export const VERSION_HISTORY = [
   {
     version: "1.2.0",
-    date: "2024-01-15",
+    date: "2025-07-06",
     features: [
       "修复 NFC 停止扫描功能",
       "解决 'ongoing scan' 错误",
       "添加智能重试机制",
       "新增重置功能",
       "完善 SEO 优化",
-      "添加版本号显示"
-    ]
+      "添加版本号显示",
+    ],
   },
   {
-    version: "1.1.0", 
+    version: "1.1.0",
     date: "2024-01-10",
     features: [
       "添加 NFC 写入功能",
       "支持 NFC 标签复制",
       "修复 mediaType 错误",
       "增强错误处理",
-      "添加故障排除文档"
-    ]
+      "添加故障排除文档",
+    ],
   },
   {
     version: "1.0.0",
-    date: "2024-01-01", 
+    date: "2024-01-01",
     features: [
       "基础 NFC 读取功能",
       "支付宝链接解码",
       "二维码生成",
       "响应式界面设计",
-      "开源发布"
-    ]
-  }
+      "开源发布",
+    ],
+  },
 ];
 
 // 获取当前版本信息

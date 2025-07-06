@@ -16,7 +16,7 @@ export default function StructuredData() {
         operatingSystem: "Android",
         browserRequirements: "Chrome for Android 89+",
         softwareVersion: APP_VERSION,
-        datePublished: "2024-01-01",
+        datePublished: "2025-07-06",
         dateModified: new Date().toISOString().split("T")[0],
         author: {
           "@type": "Person",

@@ -356,7 +356,7 @@ export default function PromoPage() {
             <p className="text-gray-400 mb-6">开源的支付宝 NFC 链接解码器</p>
 
             <div className="flex justify-center items-center space-x-6 text-sm text-gray-400">
-              <span>© 2024 Ali-NFC2QR</span>
+              <span>© 2025 Ali-NFC2QR</span>
               <span>•</span>
               <span>MIT License</span>
               <span>•</span>

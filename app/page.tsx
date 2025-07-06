@@ -601,7 +601,7 @@ export default function AlipayNFCDecoder() {
                 开源的支付宝 NFC 链接解码器 | 支持 NFC 读取、写入和二维码生成
               </div>
               <div className="text-xs text-gray-400">
-                © 2024 Ali-NFC2QR | MIT License |
+                © 2025 Ali-NFC2QR | MIT License |
                 <a
                   href="https://github.com/14790897/Ali-NFC2QR"
                   target="_blank"
