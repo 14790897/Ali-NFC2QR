@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import ChatwootWidget from "@/components/ChatwootWidget";
 
 export const metadata: Metadata = {
   title: {
@@ -128,7 +129,10 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body>{children}</body>
+      <body>
+        {children}
+        <ChatwootWidget />
+      </body>
     </html>
   );
 }
